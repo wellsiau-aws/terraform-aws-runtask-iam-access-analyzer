@@ -8,6 +8,13 @@ Sample demonstration of Run Tasks integration with IAM Access Analyzer (IA2) to 
 
 First, clone and deploy the AWS infrastructure including Lambda function URL, EventBridge rules and Step functions.
 
+TODO fix:
+```
+cd event-bridge/
+# change the org name in lambda/runtask_request/handler.py#L35 to your TFC org
+make all
+```
+
 ```
 git clone git@github.com:wellsiau-aws/runtask-iam-access-analyzer.git
 cd runtask-iam-access-analyzer/event-bridge
