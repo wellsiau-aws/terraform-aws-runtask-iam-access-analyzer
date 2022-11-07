@@ -32,7 +32,7 @@ def lambda_handler(event, context):
     # send OK
     logger.info(json.dumps(event))
     try:
-      if event["payload"]["detail"]["organization_name"] == "tfc-integration-sandbox":
+      if event["payload"]["detail"]["organization_name"] == "wellsiau-org":
         return "verified"
     except Exception as e:
         logger.exception("Run Task Request error: {}".format(e))
