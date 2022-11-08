@@ -13,7 +13,8 @@ Clone and deploy the AWS infrastructure including Lambda function URL, EventBrid
 [TODO: fix] Change the org name in the file [`/event-bridge/lambda/runtask_request/handler.py`](/event-bridge/lambda/runtask_request/handler.py#L35) to your TFC org:
 
 ```py
-
+# Change the org name
+if event["payload"]["detail"]["organization_name"] == "wellsiau-org":
 ```
 
 Make Lambda files
