@@ -6,12 +6,20 @@ Sample demonstration of Run Tasks integration with IAM Access Analyzer (IA2) to 
 
 ## Getting started
 
-First, clone and deploy the AWS infrastructure including Lambda function URL, EventBridge rules and Step functions.
+### Step 1 
 
-TODO fix:
+Clone and deploy the AWS infrastructure including Lambda function URL, EventBridge rules and Step functions.
+
+[TODO: fix] Change the org name in the file [`/event-bridge/lambda/runtask_request/handler.py`](/event-bridge/lambda/runtask_request/handler.py#L35) to your TFC org:
+
+```py
+
+```
+
+Make Lambda files
+
 ```
 cd event-bridge/
-# change the org name in lambda/runtask_request/handler.py#L35 to your TFC org
 make all
 ```
 
@@ -24,10 +32,47 @@ terraform apply
 
 Copy the function URL output (`runtask_eventbridge_url`) and use it on the next step.
 
-Next, retrieve the HMAC key value from AWS Secrets Manager. 
+### Step 2 
 
-Use the function URL output and the HMAC value when setting up the Run Task in Terraform CLoud. 
+Next, retrieve the HMAC key value from AWS Secrets Manager and use is along with the function URL output when setting up the Run Task in Terraform Cloud. 
 
-Create new workspace and attach the Run Task, use Post Plan mode.
+```
+cd examples/
+```
 
-Run Terraform apply to test.
+Make sure you have the capability to create a new workspace in Terraform Cloud, we'll be creating a new workspace with name "test-aws-runtask", 
+
+Input your Terraform Cloud org name in [`main.tf`](/examples/main.tf#L9) file in 2 locations
+
+```t
+.
+.
+.
+  cloud {
+    # TODO: Change this to your Terraform Cloud org name.
+    organization = "<enter your org name here>"
+  }
+.
+.
+.
+data "tfe_organization" "org" {
+  # TODO: Change this to your Terraform Cloud org name.
+  name = "<enter your workspace name here>"
+}
+.
+.
+.
+```
+
+Create the run task using the following command
+
+```bash
+terraform init
+terraform apply \
+-var runtask_eventbridge_url="<your run task event bridge url here>" \ 
+-var runtask_hmac="<your run task HMAC key here>"
+```
+
+### Step 3
+
+To test the run task let's try to deploy an EC2 instance in AWS. Uncomment the last few lines in the [`main.tf`](/examples/main.tf#L59) file
