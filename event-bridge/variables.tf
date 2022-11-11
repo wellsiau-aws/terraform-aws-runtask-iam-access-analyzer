@@ -31,3 +31,8 @@ variable "runtask_stages" {
   type        = list(string)
   default     = ["pre_plan", "post_plan", "pre_apply"]
 }
+
+variable "tfc_org" {
+  description = "Terraform Organization name"
+  type = string
+}

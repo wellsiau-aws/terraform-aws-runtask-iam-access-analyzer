@@ -4,46 +4,72 @@ Sample demonstration of Run Tasks integration with IAM Access Analyzer (IA2) to 
 
 ![Diagram](./diagram/RunTask-EventBridge.png)
 
-## Getting started
+# Getting started
 
-### Step 1 
+## Step 1 
 
-Clone and deploy the AWS infrastructure including Lambda function URL, EventBridge rules and Step functions.
+* Clone the repository and change the directory
 
-[TODO: fix] Change the org name in the file [`/event-bridge/lambda/runtask_request/handler.py`](/event-bridge/lambda/runtask_request/handler.py#L35) to your TFC org:
-
-```py
-# Change the org name
-if event["payload"]["detail"]["organization_name"] == "wellsiau-org":
+```bash
+git clone git@github.com:wellsiau-aws/runtask-iam-access-analyzer.git
+cd runtask-iam-access-analyzer/event-bridge
 ```
 
-Make Lambda files
+* Change the org name in the file [`provider.tf`](/event-bridge/provider.tf#L5) to your TFC org, optionally you can configure the workspace name too.
+
+```t
+  terraform {
+
+    cloud {
+      # TODO: Change this to your Terraform Cloud org name.
+      organization = "tfc-integration-sandbox"
+      .
+      .
+```
+
+* Make Lambda files
 
 ```
 cd event-bridge/
 make all
 ```
 
-```
-git clone git@github.com:wellsiau-aws/runtask-iam-access-analyzer.git
-cd runtask-iam-access-analyzer/event-bridge
+* Apply the Terraform Configuration, this will require you to configure the AWS credentials in Terraform Cloud. [Follow these instructions to learn more](https://developer.hashicorp.com/terraform/tutorials/cloud-get-started/cloud-create-variable-set).
+
+```bash
+echo 'tfc_org="tfc-integration-sandbox"' | tee tf.auto.tfvars
 terraform init
 terraform apply
 ```
 
-Copy the function URL output (`runtask_eventbridge_url`) and use it on the next step.
+* Copy the function URL output (`runtask_eventbridge_url`) and use it on the next step.
 
-### Step 2 
+```bash
+.
+.
+Apply complete! Resources: 28 added, 0 changed, 22 destroyed.
 
-Next, retrieve the HMAC key value from AWS Secrets Manager and use is along with the function URL output when setting up the Run Task in Terraform Cloud. 
+Outputs:
+
+runtask_eventbridge_url = "https://<enter_your_generated_aws_url_here>"
+runtask_hmac = <sensitive>
+```
+
+* To view the run task hmac key, use the following
+
+```bash
+terraform output -raw runtask_hmac
+```
+
+## Step 2 
+
+* Next, retrieve the HMAC key value and use is along with the function URL output when setting up the Run Task in Terraform Cloud. 
 
 ```
 cd examples/
 ```
 
-Make sure you have the capability to create a new workspace in Terraform Cloud, we'll be creating a new workspace with name "test-aws-runtask", 
-
-Input your Terraform Cloud org name in [`main.tf`](/examples/main.tf#L9) file in 2 locations
+* Change the org name in the file [`main.tf`](/examples/main.tf#L9) file in 2 locations, optionally you can configure the workspace name too.
 
 ```t
 .
@@ -65,15 +91,86 @@ data "tfe_organization" "org" {
 .
 ```
 
-Create the run task using the following command
+* In order to create and configure the run tasks, you need to have Terraform Cloud keys stored as Variable/Variable Sets in the workspace
+
+![TFC Configure Variable Set](diagram/TerraformCloud-VariableSets.png?raw=true "Configure Terraform Cloud Variable Set")
+
+ * Create and attach the run task using the following command
 
 ```bash
+echo 'runtask_eventbridge_url="<enter_your_generated_aws_url_here>"' >> tf.auto.tfvars
+echo 'runtask_hmac="<enter_your_runtask_hmac_here>"' >> tf.auto.tfvars
+
 terraform init
-terraform apply \
--var runtask_eventbridge_url="<your run task event bridge url here>" \ 
--var runtask_hmac="<your run task HMAC key here>"
+terraform apply
 ```
 
-### Step 3
+* Successfull creation of the run task should look something like this:
 
-To test the run task let's try to deploy an EC2 instance in AWS. Uncomment the last few lines in the [`main.tf`](/examples/main.tf#L59) file
+```bash
+.
+.
+.
+tfe_organization_run_task.aws-iam-analyzer: Creation complete after 2s [id=task-MPeju2LbLexXBzhg]
+tfe_workspace_run_task.aws-iam-analyzer-attach: Creating...
+tfe_workspace_run_task.aws-iam-analyzer-attach: Creation complete after 1s [id=wstask-YXFF3NSXtjx9xCMP]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+```
+ 
+## Step 3
+  
+* Uncomment these lines in the [`main.tf`](/examples/main.tf#L59) file.
+
+```bash
+.
+.
+.
+# provider "aws" {
+#   # TODO: Specify the region you like to use.
+#   region = "us-east-2"
+# }
+
+# data "aws_ami" "amazon2" {
+#   most_recent = true
+
+#   filter {
+#     name   = "name"
+#     values = ["amzn2-ami-hvm-*-x86_64-ebs"]
+#   }
+
+#   owners = ["amazon"]
+# }
+
+# resource "aws_instance" "ec2" {
+#   ami           = data.aws_ami.amazon2.id
+#   instance_type = "t3.nano"
+# }
+```
+* To test the run task let's try to deploy an EC2 instance in AWS. This will require you to configure the AWS credentials in Terraform Cloud. [Follow these instructions to learn more](https://developer.hashicorp.com/terraform/tutorials/cloud-get-started/cloud-create-variable-set).
+
+```bash
+terraform init -upgrade
+terraform plan
+```
+
+* The result should look something like this:
+
+```bash
+.
+.
+.
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Post-plan Tasks:
+
+All tasks completed! 1 passed, 0 failed           (2s elapsed)
+
+│ aws-iam-analyzer ⸺   Passed
+│ 0 ERROR, 0 SECURITY_WARNING, 0 SUGGESTION, 0 WARNING
+│ Details: https://kx7o9wj3me.execute-api.us-east-1.amazonaws.com
+│ 
+│ 
+│ Overall Result: Passed
+```
+

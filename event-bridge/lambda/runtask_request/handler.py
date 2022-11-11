@@ -19,6 +19,8 @@ import logging
 import os
 from time import sleep
 
+tfc_org = os.environ['TFC_ORG'];
+
 logger = logging.getLogger()
 if 'log_level' in os.environ:
     logger.setLevel(os.environ['log_level'])
@@ -32,7 +34,7 @@ def lambda_handler(event, context):
     # send OK
     logger.info(json.dumps(event))
     try:
-      if event["payload"]["detail"]["organization_name"] == "wellsiau-org":
+      if event["payload"]["detail"]["organization_name"] == tfc_org:
         return "verified"
     except Exception as e:
         logger.exception("Run Task Request error: {}".format(e))

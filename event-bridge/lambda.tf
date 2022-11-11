@@ -51,6 +51,11 @@ resource "aws_lambda_function" "runtask_request" {
     mode = "Active"
   }
   reserved_concurrent_executions = local.lambda_reserved_concurrency
+  environment {
+    variables = {
+      TFC_ORG = "${var.tfc_org}"
+    }
+  }
   #checkov:skip=CKV_AWS_116:not using DLQ
   #checkov:skip=CKV_AWS_117:VPC is not required
   #checkov:skip=CKV_AWS_272:skip code-signing

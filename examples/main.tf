@@ -9,18 +9,7 @@ terraform {
     organization = "tfc-integration-sandbox"
 
     workspaces {
-      name = "test-aws-runtask"
-    }
-  }
-
-  required_providers {
-    aws = {
-      source = "hashicorp/aws"
-      version = "4.28.0"
-    }
-    tfe = {
-      source = "hashicorp/tfe"
-      version = "0.38.0"
+      name = "aws-iam-runtask-test"
     }
   }
 }
@@ -31,8 +20,11 @@ data "tfe_organization" "org" {
 }
 
 data "tfe_workspace" "workspace" {
-  name         = "test-aws-runtask"
+  name         = "aws-iam-runtask-test"
   organization = data.tfe_organization.org.name
+}
+
+provider tfe {
 }
 
 # ==========================================================================
@@ -60,9 +52,8 @@ resource "tfe_workspace_run_task" "aws-iam-analyzer-attach" {
 }
 
 # ==========================================================================
-# CREATE AN EC2 INSTANCE IN AWS
+# CREATE AN EC2 INSTANCE IN AWS (uncomment after first apply)
 # ==========================================================================
-
 
 # provider "aws" {
 #   # TODO: Specify the region you like to use.
@@ -80,7 +71,6 @@ resource "tfe_workspace_run_task" "aws-iam-analyzer-attach" {
 #   owners = ["amazon"]
 # }
 
-# Uncomment after the first apply (that creates and attaches the run task to this workspace)
 # resource "aws_instance" "ec2" {
 #   ami           = data.aws_ami.amazon2.id
 #   instance_type = "t3.nano"
