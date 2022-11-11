@@ -6,7 +6,7 @@ terraform {
 
   cloud {
     # TODO: Change this to your Terraform Cloud org name.
-    organization = "tfc-integration-sandbox"
+    organization = "<enter your org name here>"
 
     workspaces {
       name = "aws-iam-runtask-test"
@@ -16,7 +16,7 @@ terraform {
 
 # TODO: Change this to your Terraform Cloud org name.
 data "tfe_organization" "org" {
-  name = "tfc-integration-sandbox"
+  name = "<enter your org name here>"
 }
 
 data "tfe_workspace" "workspace" {

@@ -2,7 +2,7 @@ terraform {
 
   cloud {
     # TODO: Change this to your Terraform Cloud org name.
-    organization = "tfc-integration-sandbox"
+    organization = "<enter your org name here>"
 
     # TODO: Change this to your Terraform Cloud workspace name.
     workspaces {

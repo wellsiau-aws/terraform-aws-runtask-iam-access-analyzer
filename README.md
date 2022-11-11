@@ -22,7 +22,7 @@ cd runtask-iam-access-analyzer/event-bridge
 
     cloud {
       # TODO: Change this to your Terraform Cloud org name.
-      organization = "tfc-integration-sandbox"
+      organization = "<enter your org name here>"
       .
       .
 ```
@@ -37,7 +37,7 @@ make all
 * Apply the Terraform Configuration, this will require you to configure the AWS credentials in Terraform Cloud. [Follow these instructions to learn more](https://developer.hashicorp.com/terraform/tutorials/cloud-get-started/cloud-create-variable-set).
 
 ```bash
-echo 'tfc_org="tfc-integration-sandbox"' | tee tf.auto.tfvars
+echo 'tfc_org="<enter your org name here>"' | tee tf.auto.tfvars
 terraform init
 terraform apply
 ```
