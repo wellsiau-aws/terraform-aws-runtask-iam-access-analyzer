@@ -20,7 +20,7 @@ resource "aws_lambda_function" "runtask_eventbridge" {
   reserved_concurrent_executions = local.lambda_reserved_concurrency
   #checkov:skip=CKV_AWS_116:not using DLQ
   #checkov:skip=CKV_AWS_117:VPC is not required
-  #checkov:skip=CKV_AWS_173:non sensitive environment variables
+  #checkov:skip=CKV_AWS_173:no sensitive info inside environment variable
   #checkov:skip=CKV_AWS_272:skip code-signing
 }
 
@@ -58,6 +58,7 @@ resource "aws_lambda_function" "runtask_request" {
   }
   #checkov:skip=CKV_AWS_116:not using DLQ
   #checkov:skip=CKV_AWS_117:VPC is not required
+  #checkov:skip=CKV_AWS_173:no sensitive info inside environment variable
   #checkov:skip=CKV_AWS_272:skip code-signing
 }
 
