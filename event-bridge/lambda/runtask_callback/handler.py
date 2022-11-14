@@ -39,7 +39,7 @@ def lambda_handler(event, context):
                 "attributes": {
                     "status": event["payload"]["result"]["fulfillment"]["status"],
                     "message": event["payload"]["result"]["fulfillment"]["message"],
-                    "url": "https://kx7o9wj3me.execute-api.us-east-1.amazonaws.com"
+                    "url": "https://console.aws.amazon.com/"
                 },
                 "type": "task-results",
             }
