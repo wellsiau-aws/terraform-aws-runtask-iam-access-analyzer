@@ -1,6 +1,6 @@
 ################# RunTask EventBridge ##################
 resource "aws_iam_role" "runtask_eventbridge" {
-  name               =  "${var.name_prefix}-runtask-eventbridge"
+  name               = "${var.name_prefix}-runtask-eventbridge"
   assume_role_policy = templatefile("${path.module}/iam/trust-policies/lambda.tpl", { none = "none" })
 }
 
@@ -11,9 +11,9 @@ resource "aws_iam_role_policy_attachment" "runtask_eventbridge" {
 }
 
 resource "aws_iam_role_policy" "runtask_eventbridge" {
-  name    = "${var.name_prefix}-runtask-eventbridge-policy"
-  role    = aws_iam_role.runtask_eventbridge.id
-  policy  = templatefile("${path.module}/iam/role-policies/runtask-eventbridge-lambda-role-policy.tpl", {
+  name = "${var.name_prefix}-runtask-eventbridge-policy"
+  role = aws_iam_role.runtask_eventbridge.id
+  policy = templatefile("${path.module}/iam/role-policies/runtask-eventbridge-lambda-role-policy.tpl", {
     data_aws_region       = data.aws_region.current_region.name
     data_aws_account_id   = data.aws_caller_identity.current_account.account_id
     data_aws_partition    = data.aws_partition.current_partition.partition
@@ -59,12 +59,12 @@ resource "aws_iam_role_policy_attachment" "runtask_fulfillment" {
 }
 
 resource "aws_iam_role_policy" "runtask_fulfillment" {
-  name    = "${var.name_prefix}-runtask-fulfillment-policy"
-  role    = aws_iam_role.runtask_fulfillment.id
-  policy  = templatefile("${path.module}/iam/role-policies/runtask-fulfillment-lambda-role-policy.tpl", {
-    data_aws_region       = data.aws_region.current_region.name
-    data_aws_account_id   = data.aws_caller_identity.current_account.account_id
-    data_aws_partition    = data.aws_partition.current_partition.partition
+  name = "${var.name_prefix}-runtask-fulfillment-policy"
+  role = aws_iam_role.runtask_fulfillment.id
+  policy = templatefile("${path.module}/iam/role-policies/runtask-fulfillment-lambda-role-policy.tpl", {
+    data_aws_region     = data.aws_region.current_region.name
+    data_aws_account_id = data.aws_caller_identity.current_account.account_id
+    data_aws_partition  = data.aws_partition.current_partition.partition
   })
 }
 
@@ -75,13 +75,13 @@ resource "aws_iam_role" "runtask_states" {
 }
 
 resource "aws_iam_role_policy" "runtask_states" {
-  name    = "${var.name_prefix}-runtask-statemachine-policy"
-  role    = aws_iam_role.runtask_states.id
-  policy  = templatefile("${path.module}/iam/role-policies/runtask-state-role-policy.tpl", {
-    data_aws_region       = data.aws_region.current_region.name
-    data_aws_account_id   = data.aws_caller_identity.current_account.account_id
-    data_aws_partition    = data.aws_partition.current_partition.partition
-    var_name_prefix       = var.name_prefix
+  name = "${var.name_prefix}-runtask-statemachine-policy"
+  role = aws_iam_role.runtask_states.id
+  policy = templatefile("${path.module}/iam/role-policies/runtask-state-role-policy.tpl", {
+    data_aws_region     = data.aws_region.current_region.name
+    data_aws_account_id = data.aws_caller_identity.current_account.account_id
+    data_aws_partition  = data.aws_partition.current_partition.partition
+    var_name_prefix     = var.name_prefix
   })
 }
 
@@ -93,9 +93,9 @@ resource "aws_iam_role" "runtask_rule" {
 }
 
 resource "aws_iam_role_policy" "runtask_rule" {
-  name    = "${var.name_prefix}-runtask-rule-policy"
-  role    = aws_iam_role.runtask_rule.id
-  policy  = templatefile("${path.module}/iam/role-policies/runtask-rule-role-policy.tpl", {
+  name = "${var.name_prefix}-runtask-rule-policy"
+  role = aws_iam_role.runtask_rule.id
+  policy = templatefile("${path.module}/iam/role-policies/runtask-rule-role-policy.tpl", {
     resource_runtask_states = aws_sfn_state_machine.runtask_states.arn
   })
 }

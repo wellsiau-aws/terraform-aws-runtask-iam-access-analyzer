@@ -4,7 +4,7 @@ terraform {
     # TODO: Change this to your Terraform Cloud org name.
     organization = "<your tfc organization>"
     workspaces {
-      tags = ["app:aws-event-bridge"]
+      tags = ["env:aws-run-task-demo"]
     }
   }
 

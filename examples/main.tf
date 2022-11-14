@@ -1,77 +1,57 @@
 # ==========================================================================
-# SETUP TERRAFORM CLOUD
-# ==========================================================================
-
-terraform {
-
-  cloud {
-    # TODO: Change this to your Terraform Cloud org name.
-    organization = "<enter your org name here>"
-
-    workspaces {
-      name = "aws-iam-runtask-test"
-    }
-  }
-}
-
-# TODO: Change this to your Terraform Cloud org name.
-data "tfe_organization" "org" {
-  name = "<enter your org name here>"
-}
-
-data "tfe_workspace" "workspace" {
-  name         = "aws-iam-runtask-test"
-  organization = data.tfe_organization.org.name
-}
-
-provider tfe {
-}
-
-# ==========================================================================
-# CREATE RUN TASKS
-# ==========================================================================
-
-resource "tfe_organization_run_task" "aws-iam-analyzer" {
-  organization = data.tfe_organization.org.name
-  url          = var.runtask_eventbridge_url
-  name         = var.runtask_name
-  enabled      = true
-  hmac_key     = var.runtask_hmac
-  description  = var.runtask_description
-}
-
-# ==========================================================================
 # ATTACH RUN TASKS
 # ==========================================================================
 
 resource "tfe_workspace_run_task" "aws-iam-analyzer-attach" {
+  count             = var.flag_attach_runtask ? 1 : 0
   workspace_id      = data.tfe_workspace.workspace.id
-  task_id           = tfe_organization_run_task.aws-iam-analyzer.id
+  task_id           = var.runtask_id
   enforcement_level = var.runtask_enforcement_level
   stage             = var.runtask_stage
 }
 
 # ==========================================================================
-# CREATE AN EC2 INSTANCE IN AWS (uncomment after first apply)
+# CREATE SIMPLE IAM POLICY
 # ==========================================================================
 
-# provider "aws" {
-#   # TODO: Specify the region you like to use.
-#   region = "us-east-2"
-# }
+resource "aws_iam_policy" "simple_invalid_iam_policy" {
+  # the sample policy below contains invalid iam permissions (syntax-wise)
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+  name   = "${var.name_prefix}-simple-invalid-iam-policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "logs:CreateLogGroups",
+        "logs:CreateLogStreams",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*",
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
 
-# data "aws_ami" "amazon2" {
-#   most_recent = true
-
-#   filter {
-#     name   = "name"
-#     values = ["amzn2-ami-hvm-*-x86_64-ebs"]
-#   }
-
-#   owners = ["amazon"]
-# }
-
-# resource "aws_instance" "ec2" {
-#   ami           = data.aws_ami.amazon2.id
-#   instance_type = "t3.nano"
-# }
+resource "aws_iam_policy" "simple_valid_iam_policy" {
+  name   = "${var.name_prefix}-simple-valid-iam-policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*",
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}

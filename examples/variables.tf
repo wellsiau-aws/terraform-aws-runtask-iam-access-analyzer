@@ -1,19 +1,13 @@
-/*
-  *
-  * Optional Variables
-  *
-  */
-
-variable "runtask_name" {
-  type        = string
-  description = "The name attached to the run task"
-  default     = "aws-iam-analyzer"
+variable "flag_attach_runtask" {
+  description = "Switch this flag to true to attach the run task to the workspace"
+  type        = bool
+  default     = false
 }
 
-variable "runtask_description" {
-  type        = string
-  description = "The description give to the attached run task (optional)"
-  default     = "This Run Task analyzes your AWS IAM Policy before apply"
+variable "flag_deploy_invalid_resource" {
+  description = "Switch this flag to true to deploy sample invalid IAM policy and validate it with Run Task"
+  type        = bool
+  default     = false
 }
 
 variable "runtask_enforcement_level" {
@@ -28,18 +22,32 @@ variable "runtask_stage" {
   default     = "post_plan"
 }
 
-/*
-  *
-  * Required Variables
-  *
-  */
-
-variable "runtask_eventbridge_url" {
+variable "runtask_id" {
   type        = string
-  description = "The URL of your run task created from the event bridge output"
+  description = "The run task id of the IAM Access Analyzer run task"
 }
 
-variable "runtask_hmac" {
+variable "tfc_org" {
+  description = "Terraform Organization name"
   type        = string
-  description = "The HMAC key for the run task"
+}
+
+variable "aws_region" {
+  description = "The region from which this module will be executed."
+  type        = string
+  validation {
+    condition     = can(regex("(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\\d", var.aws_region))
+    error_message = "Variable var: region is not valid."
+  }
+}
+
+variable "demo_workspace_name" {
+  type        = string
+  description = "The workspace name"
+}
+
+variable "name_prefix" {
+  description = "Name to be used on all the resources as identifier."
+  type        = string
+  default     = "ia2"
 }

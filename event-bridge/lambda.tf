@@ -9,8 +9,8 @@ resource "aws_lambda_function" "runtask_eventbridge" {
   runtime          = local.lambda_python_runtime
   timeout          = local.lambda_default_timeout
   environment {
-    variables   = {
-      TFC_HMAC_SECRET_ARN = aws_secretsmanager_secret.runtask_hmac.arn 
+    variables = {
+      TFC_HMAC_SECRET_ARN = aws_secretsmanager_secret.runtask_hmac.arn
       EVENT_BUS_NAME      = var.event_bus_name
     }
   }

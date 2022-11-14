@@ -1,7 +1,8 @@
 resource "random_uuid" "runtask_hmac" {}
 
 resource "aws_secretsmanager_secret" "runtask_hmac" {
-  name  = "${var.name_prefix}-runtask-hmac"
+  name                    = "${var.name_prefix}-runtask-hmac"
+  recovery_window_in_days = var.recovery_window
   #checkov:skip=CKV_AWS_149:use AWS managed key for demo purpose
 }
 
