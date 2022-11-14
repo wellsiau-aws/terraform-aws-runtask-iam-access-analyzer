@@ -62,20 +62,23 @@ def get_iam_policy(plan_output):
     for resource in plan_output:
         logger.info(resource)
         if resource["type"] == "aws_iam_policy":
-            iam_policy = json.loads(resource["change"]["after"]["policy"])
-            logger.info(json.dumps(iam_policy))
-            ia2_response = validate_policy(json.dumps(iam_policy), "IDENTITY_POLICY")
-            logger.info(ia2_response)
-            if len(ia2_response["findings"]) > 0:
-                for finding in ia2_response["findings"]:
-                    if finding["findingType"] == "ERROR":
-                        ia2_error += 1
-                    elif finding["findingType"] == "SECURITY_WARNING":
-                        ia2_security_warning += 1
-                    elif finding["findingType"] == "SUGGESTION":
-                        ia2_suggestion += 1
-                    elif finding["findingType"] == "WARNING":
-                        ia2_warning += 1
+            if resource["change"]["after"] != None:
+                iam_policy = json.loads(resource["change"]["after"]["policy"])
+                logger.info(json.dumps(iam_policy))
+                ia2_response = validate_policy(json.dumps(iam_policy), "IDENTITY_POLICY")
+                logger.info(ia2_response)
+                if len(ia2_response["findings"]) > 0:
+                    for finding in ia2_response["findings"]:
+                        if finding["findingType"] == "ERROR":
+                            ia2_error += 1
+                        elif finding["findingType"] == "SECURITY_WARNING":
+                            ia2_security_warning += 1
+                        elif finding["findingType"] == "SUGGESTION":
+                            ia2_suggestion += 1
+                        elif finding["findingType"] == "WARNING":
+                            ia2_warning += 1
+            else:
+                logger.info("New policy is null / deleted")
     ia2_results = "{} ERROR, {} SECURITY_WARNING, {} SUGGESTION, {} WARNING".format(
         ia2_error, ia2_security_warning, ia2_suggestion, ia2_warning)
     if ia2_error + ia2_security_warning > 0:
