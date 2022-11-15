@@ -136,9 +136,13 @@ Terraform apply will fail due to two errors. To fix this error, modify the inval
 - `logs:CreateLogGroups` to `logs:CreateLogGroup`  
 - `logs:CreateLogStreams` to `logs:CreateLogStream`
 
+To experiment with another types of IAM Access Analyzer policy validation, modify the assume role policy document or the iam role policy in the provided template.
+
 # Limitations
 
-1. Does not support Terraform [computed resources](https://www.terraform.io/plugin/sdkv2/schemas/schema-behaviors).
+1. Does not provide verbose error / warning messages in Run Task console. In the future, we will explore possibility to provide verbose logging.
+
+2. Does not support Terraform [computed resources](https://www.terraform.io/plugin/sdkv2/schemas/schema-behaviors).
 For example, the tool will report no IAM policy found for the following Terraform template. The policy json string is a computed resource. The plan output doesn't contain information of IAM policy document. 
 
     ```
@@ -170,4 +174,4 @@ For example, the tool will report no IAM policy found for the following Terrafor
     }
     ```
 
-2. Does not support `inline_policy` and `managed_policy_arns` inside of `aws_iam_role`. This solution only inspect the `assume_role_policy` for `aws_iam_role` resource. To inspect IAM policy attached to `aws_iam_role` resource, we recommend to use `aws_iam_role_policy`.
+3. Does not support `inline_policy` and `managed_policy_arns` inside of `aws_iam_role`. This solution only inspect the `assume_role_policy` for `aws_iam_role` resource. To inspect IAM policy attached to `aws_iam_role` resource, we recommend to use `aws_iam_role_policy`.
