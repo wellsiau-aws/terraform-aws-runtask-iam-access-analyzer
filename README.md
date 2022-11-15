@@ -169,3 +169,5 @@ For example, the tool will report no IAM policy found for the following Terrafor
       })
     }
     ```
+
+2. Does not support `inline_policy` and `managed_policy_arns` inside of `aws_iam_role`. This solution only inspect the `assume_role_policy` for `aws_iam_role` resource. To inspect IAM policy attached to `aws_iam_role` resource, we recommend to use `aws_iam_role_policy`.

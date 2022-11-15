@@ -21,6 +21,19 @@ import boto3
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
+from enum import Enum
+
+class IA2PolicyType(Enum):
+    aws_iam_policy = "IDENTITY_POLICY"
+    aws_iam_role_policy = "IDENTITY_POLICY"
+    aws_iam_role = "RESOURCE_POLICY"
+    aws_organizations_policy = "SERVICE_CONTROL_POLICY"
+
+class TFPlanPolicyKey(Enum):
+    aws_iam_policy = "policy"
+    aws_iam_role_policy = "policy"
+    aws_iam_role = "assume_role_policy"
+    aws_organizations_policy = "policy"
 
 session = boto3.Session()
 ia2_client = session.client('accessanalyzer')
@@ -43,7 +56,17 @@ def lambda_handler(event, context):
         logger.info("Headers : {}".format(response_raw.headers))
         logger.info("JSON Response : {}".format(json.dumps(json_response)))
 
-        fulfillment_output, fulfillment_pass = get_iam_policy(json_response["resource_changes"])
+        if get_plan_changes(json_response):
+            logger.info("Resource changes detected")
+            fulfillment_output, fulfillment_pass = get_iam_policy(json_response["resource_changes"])
+        else:
+            logger.info("No resource changes detected")
+            fulfillment_output = "{} ERROR, {} SECURITY_WARNING, {} SUGGESTION, {} WARNING".format(0, 0, 0, 0)
+            fulfillment_pass = "passed"
+        
+        logger.info(fulfillment_output)
+        logger.info(fulfillment_pass)
+
         return {
             "status": fulfillment_pass,
             "message": fulfillment_output
@@ -53,20 +76,29 @@ def lambda_handler(event, context):
         logger.exception("Run Task Fulfillment error: {}".format(e))
         raise
 
+def get_plan_changes(plan_payload):
+    if "resource_changes" in plan_payload:
+        return True
+    else:
+        return False
+
 def get_iam_policy(plan_output):
     ia2_error = 0
     ia2_security_warning = 0
     ia2_suggestion = 0
     ia2_warning = 0
     ia2_pass = "passed" #Only passed, failed or running are allowed.
-    for resource in plan_output:
-        logger.info(resource)
-        if resource["type"] == "aws_iam_policy":
+
+    for resource in plan_output:        
+        if resource["type"] in ["aws_iam_policy", "aws_iam_role_policy", "aws_iam_role"]:
+            logger.info("Resource : {}".format(json.dumps(resource)))
             if resource["change"]["after"] != None:
-                iam_policy = json.loads(resource["change"]["after"]["policy"])
-                logger.info(json.dumps(iam_policy))
-                ia2_response = validate_policy(json.dumps(iam_policy), "IDENTITY_POLICY")
-                logger.info(ia2_response)
+                iam_policy = json.loads(resource["change"]["after"][TFPlanPolicyKey[resource["type"]].value])
+                logger.info("Policy : {}".format(json.dumps(iam_policy)))
+
+                ia2_response = validate_policy(json.dumps(iam_policy), IA2PolicyType[resource["type"]].value)
+                logger.info("Response : {}".format(ia2_response["findings"]))
+
                 if len(ia2_response["findings"]) > 0:
                     for finding in ia2_response["findings"]:
                         if finding["findingType"] == "ERROR":
@@ -79,14 +111,16 @@ def get_iam_policy(plan_output):
                             ia2_warning += 1
             else:
                 logger.info("New policy is null / deleted")
+
     ia2_results = "{} ERROR, {} SECURITY_WARNING, {} SUGGESTION, {} WARNING".format(
         ia2_error, ia2_security_warning, ia2_suggestion, ia2_warning)
+
     if ia2_error + ia2_security_warning > 0:
         ia2_pass = "failed"
+
     return ia2_results, ia2_pass
 
 def validate_policy(policy_document, policy_type):
-    logger.info("Inspecting policy via IAM Access Analyzer")
     response = ia2_client.validate_policy(
         policyDocument=policy_document,
         policyType=policy_type
