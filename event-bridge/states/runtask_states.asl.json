@@ -61,7 +61,8 @@
       "OutputPath": "$",
       "ResultSelector": {
         "status.$": "$.Payload.status",
-        "message.$": "$.Payload.message"
+        "message.$": "$.Payload.message",
+        "link.$": "$.Payload.link"
       },
       "Retry": [
         {

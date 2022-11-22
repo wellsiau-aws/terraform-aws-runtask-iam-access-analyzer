@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import boto3
+import time
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -37,13 +38,20 @@ class TFPlanPolicyKey(Enum):
 
 session = boto3.Session()
 ia2_client = session.client('accessanalyzer')
+cwl_client = session.client('logs')
 
 logger = logging.getLogger()
 if 'log_level' in os.environ:
-    logger.setLevel(os.environ['log_level'])
+    logger.setLevel(os.environ["log_level"])
     logger.info("Log level set to %s" % logger.getEffectiveLevel())
 else:
     logger.setLevel(logging.INFO)
+
+if 'CW_LOG_GROUP_NAME' in os.environ:
+    LOG_GROUP_NAME = os.environ["CW_LOG_GROUP_NAME"]
+else:
+    # disable logging if environment variable is not set
+    LOG_GROUP_NAME = False
 
 def lambda_handler(event, context):
     logger.info(json.dumps(event))
@@ -56,20 +64,26 @@ def lambda_handler(event, context):
         logger.info("Headers : {}".format(response_raw.headers))
         logger.info("JSON Response : {}".format(json.dumps(json_response)))
 
+        run_id = event["payload"]["detail"]["run_id"]
+        workspace_id = event["payload"]["detail"]["workspace_id"]
+
         if get_plan_changes(json_response):
             logger.info("Resource changes detected")
-            fulfillment_output, fulfillment_pass = get_iam_policy(json_response["resource_changes"])
+            fulfillment_output, fulfillment_pass, fulfillment_logs_link = get_iam_policy(json_response["resource_changes"], run_id, workspace_id)
         else:
             logger.info("No resource changes detected")
             fulfillment_output = "{} ERROR, {} SECURITY_WARNING, {} SUGGESTION, {} WARNING".format(0, 0, 0, 0)
             fulfillment_pass = "passed"
+            fulfillment_logs_link = False
         
-        logger.info(fulfillment_output)
-        logger.info(fulfillment_pass)
+        logger.info("Summary : " + fulfillment_output)
+        logger.info("Status : " + fulfillment_pass)
+        logger.info("Logs : " + fulfillment_logs_link)
 
         return {
             "status": fulfillment_pass,
-            "message": fulfillment_output
+            "message": fulfillment_output,
+            "link" : fulfillment_logs_link
         }
   
     except Exception as e:
@@ -82,13 +96,28 @@ def get_plan_changes(plan_payload):
     else:
         return False
 
-def get_iam_policy(plan_output):
+def get_iam_policy(plan_output, run_id, workspace_id):
     ia2_error = 0
     ia2_security_warning = 0
     ia2_suggestion = 0
     ia2_warning = 0
     ia2_pass = "passed" #Only passed, failed or running are allowed.
 
+    if LOG_GROUP_NAME:
+        LOG_STREAM_NAME = workspace_id + "_" + run_id
+        cwl_client.create_log_stream(
+            logGroupName = LOG_GROUP_NAME,
+            logStreamName = LOG_STREAM_NAME
+        )
+        SEQUENCE_TOKEN = cwl_client.put_log_events(
+            logGroupName = LOG_GROUP_NAME,
+            logStreamName = LOG_STREAM_NAME,
+            logEvents = [ {
+                'timestamp' : int(round(time.time() * 1000)),
+                'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " Start IAM Access Analyzer analysis for workspace: {} - run: {}".format(workspace_id, run_id,)
+            }]
+        )["nextSequenceToken"]
+                        
     for resource in plan_output:        
         if resource["type"] in ["aws_iam_policy", "aws_iam_role_policy", "aws_iam_role"]:
             logger.info("Resource : {}".format(json.dumps(resource)))
@@ -109,8 +138,46 @@ def get_iam_policy(plan_output):
                             ia2_suggestion += 1
                         elif finding["findingType"] == "WARNING":
                             ia2_warning += 1
+                        
+                        if LOG_GROUP_NAME:
+                            SEQUENCE_TOKEN = cwl_client.put_log_events(
+                                logGroupName = LOG_GROUP_NAME,
+                                logStreamName = LOG_STREAM_NAME,
+                                logEvents = [ {
+                                    'timestamp' : int(round(time.time() * 1000)),
+                                    'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} ".format(resource["address"]) + json.dumps(finding)
+                                }],
+                                sequenceToken = SEQUENCE_TOKEN
+                            )["nextSequenceToken"]
+                else:
+                    if LOG_GROUP_NAME:
+                        SEQUENCE_TOKEN = cwl_client.put_log_events(
+                            logGroupName = LOG_GROUP_NAME,
+                            logStreamName = LOG_STREAM_NAME,
+                            logEvents = [ {
+                                'timestamp' : int(round(time.time() * 1000)),
+                                'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - no new findings".format(resource["address"]) 
+                            }],
+                            sequenceToken = SEQUENCE_TOKEN
+                        )["nextSequenceToken"]
             else:
                 logger.info("New policy is null / deleted")
+                if LOG_GROUP_NAME:
+                    SEQUENCE_TOKEN = cwl_client.put_log_events(
+                        logGroupName = LOG_GROUP_NAME,
+                        logStreamName = LOG_STREAM_NAME,
+                        logEvents = [ {
+                            'timestamp' : int(round(time.time() * 1000)),
+                            'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - policy is null / deleted" .format(resource["address"])
+                        }],
+                        sequenceToken = SEQUENCE_TOKEN
+                    )["nextSequenceToken"]
+
+    if LOG_GROUP_NAME:
+        ia2_logs_link = "https://console.aws.amazon.com/cloudwatch/home?region={}#logEventViewer:group={};stream={}".format(
+            os.environ["AWS_REGION"], LOG_GROUP_NAME, LOG_STREAM_NAME)
+    else:
+        ia2_logs_link = "https://console.aws.amazon.com"
 
     ia2_results = "{} ERROR, {} SECURITY_WARNING, {} SUGGESTION, {} WARNING".format(
         ia2_error, ia2_security_warning, ia2_suggestion, ia2_warning)
@@ -118,7 +185,7 @@ def get_iam_policy(plan_output):
     if ia2_error + ia2_security_warning > 0:
         ia2_pass = "failed"
 
-    return ia2_results, ia2_pass
+    return ia2_results, ia2_pass, ia2_logs_link
 
 def validate_policy(policy_document, policy_type):
     response = ia2_client.validate_policy(

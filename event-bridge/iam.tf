@@ -62,9 +62,10 @@ resource "aws_iam_role_policy" "runtask_fulfillment" {
   name = "${var.name_prefix}-runtask-fulfillment-policy"
   role = aws_iam_role.runtask_fulfillment.id
   policy = templatefile("${path.module}/iam/role-policies/runtask-fulfillment-lambda-role-policy.tpl", {
-    data_aws_region     = data.aws_region.current_region.name
-    data_aws_account_id = data.aws_caller_identity.current_account.account_id
-    data_aws_partition  = data.aws_partition.current_partition.partition
+    data_aws_region      = data.aws_region.current_region.name
+    data_aws_account_id  = data.aws_caller_identity.current_account.account_id
+    data_aws_partition   = data.aws_partition.current_partition.partition
+    local_log_group_name = local.cloudwatch_log_group_name
   })
 }
 
