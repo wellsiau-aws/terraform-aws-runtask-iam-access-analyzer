@@ -121,54 +121,67 @@ def get_iam_policy(plan_output, run_id, workspace_id):
     for resource in plan_output:        
         if resource["type"] in ["aws_iam_policy", "aws_iam_role_policy", "aws_iam_role"]:
             logger.info("Resource : {}".format(json.dumps(resource)))
-            if resource["change"]["after"] != None:
-                iam_policy = json.loads(resource["change"]["after"][TFPlanPolicyKey[resource["type"]].value])
-                logger.info("Policy : {}".format(json.dumps(iam_policy)))
+            if not resource["change"]["after_unknown"]:
+                if resource["change"]["after"] != None:
+                    iam_policy = json.loads(resource["change"]["after"][TFPlanPolicyKey[resource["type"]].value])
+                    logger.info("Policy : {}".format(json.dumps(iam_policy)))
 
-                ia2_response = validate_policy(json.dumps(iam_policy), IA2PolicyType[resource["type"]].value)
-                logger.info("Response : {}".format(ia2_response["findings"]))
+                    ia2_response = validate_policy(json.dumps(iam_policy), IA2PolicyType[resource["type"]].value)
+                    logger.info("Response : {}".format(ia2_response["findings"]))
 
-                if len(ia2_response["findings"]) > 0:
-                    for finding in ia2_response["findings"]:
-                        if finding["findingType"] == "ERROR":
-                            ia2_error += 1
-                        elif finding["findingType"] == "SECURITY_WARNING":
-                            ia2_security_warning += 1
-                        elif finding["findingType"] == "SUGGESTION":
-                            ia2_suggestion += 1
-                        elif finding["findingType"] == "WARNING":
-                            ia2_warning += 1
-                        
+                    if len(ia2_response["findings"]) > 0:
+                        for finding in ia2_response["findings"]:
+                            if finding["findingType"] == "ERROR":
+                                ia2_error += 1
+                            elif finding["findingType"] == "SECURITY_WARNING":
+                                ia2_security_warning += 1
+                            elif finding["findingType"] == "SUGGESTION":
+                                ia2_suggestion += 1
+                            elif finding["findingType"] == "WARNING":
+                                ia2_warning += 1
+                            
+                            if LOG_GROUP_NAME:
+                                SEQUENCE_TOKEN = cwl_client.put_log_events(
+                                    logGroupName = LOG_GROUP_NAME,
+                                    logStreamName = LOG_STREAM_NAME,
+                                    logEvents = [ {
+                                        'timestamp' : int(round(time.time() * 1000)),
+                                        'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} ".format(resource["address"]) + json.dumps(finding)
+                                    }],
+                                    sequenceToken = SEQUENCE_TOKEN
+                                )["nextSequenceToken"]
+                    else:
                         if LOG_GROUP_NAME:
                             SEQUENCE_TOKEN = cwl_client.put_log_events(
                                 logGroupName = LOG_GROUP_NAME,
                                 logStreamName = LOG_STREAM_NAME,
                                 logEvents = [ {
                                     'timestamp' : int(round(time.time() * 1000)),
-                                    'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} ".format(resource["address"]) + json.dumps(finding)
+                                    'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - no new findings".format(resource["address"]) 
                                 }],
                                 sequenceToken = SEQUENCE_TOKEN
                             )["nextSequenceToken"]
                 else:
+                    logger.info("New policy is null / deleted")
                     if LOG_GROUP_NAME:
                         SEQUENCE_TOKEN = cwl_client.put_log_events(
                             logGroupName = LOG_GROUP_NAME,
                             logStreamName = LOG_STREAM_NAME,
                             logEvents = [ {
                                 'timestamp' : int(round(time.time() * 1000)),
-                                'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - no new findings".format(resource["address"]) 
+                                'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - policy is null / deleted" .format(resource["address"])
                             }],
                             sequenceToken = SEQUENCE_TOKEN
                         )["nextSequenceToken"]
-            else:
-                logger.info("New policy is null / deleted")
+            elif "policy" in resource["change"]["after_unknown"] and resource["change"]["after_unknown"]["policy"] == True:
+                logger.info("Unsupported policy due to missing computed values")
                 if LOG_GROUP_NAME:
                     SEQUENCE_TOKEN = cwl_client.put_log_events(
                         logGroupName = LOG_GROUP_NAME,
                         logStreamName = LOG_STREAM_NAME,
                         logEvents = [ {
                             'timestamp' : int(round(time.time() * 1000)),
-                            'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - policy is null / deleted" .format(resource["address"])
+                            'message' : time.strftime('%Y-%m-%d %H:%M:%S') + " resource: {} - unsupported policy due to missing computed values" .format(resource["address"])
                         }],
                         sequenceToken = SEQUENCE_TOKEN
                     )["nextSequenceToken"]
