@@ -39,5 +39,5 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Ignore generated eventbridge files
-event-bridge/lambda/runtask_eventbridge/*
+# Ignore generated buildfiles
+**/build/*
