@@ -19,17 +19,17 @@ First you need to deploy the Lambda Function URL, Event Bridge rule and Step Fun
 
   ```bash
   git clone git@github.com:wellsiau-aws/runtask-iam-access-analyzer.git
-  cd runtask-iam-access-analyzer/event-bridge
+  cd runtask-iam-access-analyzer
   ```
 
 * Build and package the Lambda files
 
   ```
-  cd event-bridge/
+  cd run-tasks
   make all
   ```
 
-* Change the org name in the file [`event-bridge/provider.tf`](/event-bridge/provider.tf#L5) to your TFC org.
+* Change the TFC org name in the file [`run-tasks/provider.tf`](/run-tasks/provider.tf#L5) to your TFC org.
 
   ```
   terraform {
@@ -56,7 +56,7 @@ First you need to deploy the Lambda Function URL, Event Bridge rule and Step Fun
   terraform init
   ```
 
-* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in Terraform Cloud, i.e. using variable sets. [Follow these instructions to learn more](https://developer.hashicorp.com/terraform/tutorials/cloud-get-started/cloud-create-variable-set).
+* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in Terraform Cloud, i.e. using environment variable.
 
 * In order to create and configure the run tasks, you also need to have Terraform Cloud keys stored as Variable/Variable Sets in the workspace. Add `TFE_HOSTNAME` and `TFE_TOKEN` environment variable to the same variable set or directly on the workspace.
 ![TFC Configure Variable Set](diagram/TerraformCloud-VariableSets.png?raw=true "Configure Terraform Cloud Variable Set")
@@ -66,7 +66,7 @@ First you need to deploy the Lambda Function URL, Event Bridge rule and Step Fun
   terraform apply
   ```
 
-* Navigate to your Terraform Cloud organization, go to Organization Settings > Integrations > Run tasks to find the newly created Run Task `ia2-runtask`. 
+* Navigate to your Terraform Cloud organization, go to Organization Settings > Integrations > Run tasks to find the newly created Run Task `aws-ia2-runtask`. 
 
 You can use this run task in any workspace where you have standard IAM resource policy document. Use the example steps below to continue with the demonstration.
 

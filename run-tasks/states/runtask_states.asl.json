@@ -76,7 +76,15 @@
           "BackoffRate": 2
         }
       ],
-      "Next": "runtask_callback"
+      "Next": "runtask_callback",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "fail"
+        }
+      ]
     },
     "runtask_callback": {
       "Type": "Task",

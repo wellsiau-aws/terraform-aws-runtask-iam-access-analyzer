@@ -1,4 +1,3 @@
-# Update Alternate Contacts
 resource "aws_sfn_state_machine" "runtask_states" {
   name     = "${var.name_prefix}-runtask-statemachine"
   role_arn = aws_iam_role.runtask_states.arn

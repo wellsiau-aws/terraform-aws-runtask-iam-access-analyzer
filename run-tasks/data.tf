@@ -10,24 +10,24 @@ data "aws_iam_policy" "AWSLambdaBasicExecutionRole" {
 
 data "archive_file" "runtask_eventbridge" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/runtask_eventbridge"
+  source_dir  = "${path.module}/lambda/runtask_eventbridge/build/site-packages/"
   output_path = "${path.module}/lambda/runtask_eventbridge.zip"
 }
 
 data "archive_file" "runtask_request" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/runtask_request"
+  source_dir  = "${path.module}/lambda/runtask_request/build/site-packages/"
   output_path = "${path.module}/lambda/runtask_request.zip"
 }
 
 data "archive_file" "runtask_fulfillment" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/runtask_fulfillment"
+  source_dir  = "${path.module}/lambda/runtask_fulfillment/build/site-packages/"
   output_path = "${path.module}/lambda/runtask_fulfillment.zip"
 }
 
 data "archive_file" "runtask_callback" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda/runtask_callback"
+  source_dir  = "${path.module}/lambda/runtask_callback/build/site-packages/"
   output_path = "${path.module}/lambda/runtask_callback.zip"
 }

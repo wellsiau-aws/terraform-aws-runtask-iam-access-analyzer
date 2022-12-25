@@ -41,3 +41,4 @@ terraform.rc
 
 # Ignore generated buildfiles
 **/build/*
+**/build/

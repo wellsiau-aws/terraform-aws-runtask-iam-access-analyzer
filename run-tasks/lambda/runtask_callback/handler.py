@@ -44,9 +44,9 @@ def lambda_handler(event, context):
                 "type": "task-results",
             }
         }
-        logger.info(json.dumps(payload))
+        logger.info("Payload : {}".format(json.dumps(payload)))
         response = __patch(endpoint, headers, bytes(json.dumps(payload), encoding="utf-8"))
-        logger.info(response)
+        logger.info("TFC response: {}".format(response))
         return "completed"
   
     except Exception as e:
@@ -63,12 +63,11 @@ def __patch(endpoint, headers, payload):
     request = Request(endpoint, headers=headers or {}, data=payload, method = "PATCH")
     try:
         with urlopen(request, timeout=10) as response:
-            print("success")
             return response.read(), response
     except HTTPError as error:
-        print(error.status, error.reason)
+        logger.error(error.status, error.reason)
     except URLError as error:
-        print(error.reason)
+        logger.error(error.reason)
     except TimeoutError:
-        print("Request timed out")
+        logger.error("Request timed out")
     

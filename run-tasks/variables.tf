@@ -1,7 +1,7 @@
 variable "name_prefix" {
   description = "Name to be used on all the resources as identifier."
   type        = string
-  default     = "ia2"
+  default     = "aws-ia2"
 }
 
 variable "event_bus_name" {
