@@ -4,7 +4,7 @@
     {
       "Effect": "Allow",
       "Principal": {
-        "Service": "lambda.amazonaws.com"
+        "AWSService": "lambda.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
     }

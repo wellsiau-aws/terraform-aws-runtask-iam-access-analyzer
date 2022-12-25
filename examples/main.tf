@@ -11,22 +11,28 @@ resource "tfe_workspace_run_task" "aws-iam-analyzer-attach" {
 }
 
 # ==========================================================================
-# CREATE SIMPLE IAM POLICY
+# SIMPLE IAM POLICY WITH INVALID PERMISSION
 # ==========================================================================
 
-resource "aws_iam_policy" "simple_invalid_iam_policy" {
+resource "aws_iam_policy" "policy_with_eof" {
   # the sample policy below contains invalid iam permissions (syntax-wise)
   count  = var.flag_deploy_invalid_resource ? 1 : 0
-  name   = "${var.name_prefix}-simple-invalid-iam-policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "DuplicateSid",
       "Action": [
-        "logs:CreateLogGroups",
-        "logs:CreateLogStreams",
-        "logs:PutLogEvents"
+        "logs:CreateLogGroups"
+      ],
+      "Resource": "arn:aws:logs:*:*:*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "DuplicateSid",
+      "Action": [
+        "logs:CreateLogGroup"
       ],
       "Resource": "arn:aws:logs:*:*:*",
       "Effect": "Allow"
@@ -37,23 +43,96 @@ EOF
 }
 
 # ==========================================================================
-# CREATE SIMPLE IAM ROLE AND ATTACH POLICY
+# USING IAM POLICY DOCUMENT DATA SOURCE WITH WRONG PERMISSION
 # ==========================================================================
 
-resource "aws_iam_role" "simple_invalid_iam_role" {
-  count              = var.flag_deploy_invalid_resource ? 1 : 0
-  name               = "${var.name_prefix}-simple-invalid-iam-role"
-  assume_role_policy = templatefile("${path.module}/iam/trust-policies/lambda.tpl", { none = "none" })
+data "aws_iam_policy_document" "policy_with_data_source" {
+  count = var.flag_deploy_invalid_resource ? 1 : 0
+
+  statement {
+    sid = "InvalidGetBucketLocation"
+    actions = [
+      "s3:GetMyBucketLocation",
+    ]
+    resources = [
+      "arn:aws:s3:::*",
+    ]
+  }
 }
 
-resource "aws_iam_role_policy" "simple_invalid_iam_role_policy" {
+resource "aws_iam_policy" "policy_with_data_source" {
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+  policy = data.aws_iam_policy_document.policy_with_data_source[count.index].json
+}
+
+# ==========================================================================
+# IAM ROLE WITH POLICY TEMPLATE FILE
+# ==========================================================================
+
+resource "aws_iam_role" "invalid_assume_role" {
+  count              = var.flag_deploy_invalid_resource ? 1 : 0
+  assume_role_policy = templatefile("${path.module}/iam/trust-policies/invalid-trust.tpl", { none = "none" })
+}
+
+resource "aws_iam_role_policy" "invalid_iam_role_policy" {
   count = var.flag_deploy_invalid_resource ? 1 : 0
-  name  = "${var.name_prefix}-simple-invalid-iam-role-policy"
-  role  = aws_iam_role.simple_invalid_iam_role[count.index].id
-  policy = templatefile("${path.module}/iam/role-policies/simple-invalid-iam-role-policy.tpl", {
-    data_aws_region     = data.aws_region.current_region.name
-    data_aws_account_id = data.aws_caller_identity.current_account.account_id
-    data_aws_partition  = data.aws_partition.current_partition.partition
-    var_name_prefix     = var.name_prefix
+  role  = aws_iam_role.invalid_assume_role[count.index].id
+  policy = templatefile("${path.module}/iam/role-policies/invalid-iam-role-policy.tpl", {
+    aws_region     = "us-east-0" # trigger invalid ARN region
+    aws_account_id = "123456789012"
+    aws_partition  = "aws-gov-cloud" # trigger invalid partition
+    aws_service    = "events"
+    name_prefix    = "test"
   })
+}
+
+# ==========================================================================
+# KMS WITH INVALID POLICY
+# ==========================================================================
+
+data "aws_iam_policy_document" "invalid_kms_key_policy" {
+  count = var.flag_deploy_invalid_resource ? 1 : 0
+
+  statement {
+    sid    = "Enable IAM User Permissions"
+    effect = "Allow"
+    actions = [
+      "kms:Create*",
+      "kms:Describe*",
+      "kms:Enable*"
+    ]
+    resources = ["*"]
+
+    principals {
+      type = "AWSAccount"
+      identifiers = [
+        "arn:${data.aws_partition.current_partition.id}:iam::${data.aws_caller_identity.current_account.account_id}:root"
+      ]
+    }
+  }
+}
+
+resource "aws_kms_key" "invalid_kms_key_policy" {
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+  policy = data.aws_iam_policy_document.invalid_kms_key_policy[count.index].json
+}
+
+# ==========================================================================
+# SCP WITH INVALID POLICY
+# ==========================================================================
+
+resource "aws_organizations_policy" "invalid_scp_policy" {
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+
+  name    = "test_invalid_scp_policy"
+  content = <<CONTENT
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Allow",
+    "Action": "iam:*role",
+    "Resource": "*"
+  }
+}
+CONTENT
 }

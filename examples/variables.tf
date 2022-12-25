@@ -45,9 +45,3 @@ variable "demo_workspace_name" {
   type        = string
   description = "The workspace name"
 }
-
-variable "name_prefix" {
-  description = "Name to be used on all the resources as identifier."
-  type        = string
-  default     = "ia2"
-}
