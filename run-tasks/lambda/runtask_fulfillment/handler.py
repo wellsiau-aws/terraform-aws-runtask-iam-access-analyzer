@@ -35,12 +35,14 @@ class IA2PolicyType(Enum):
     aws_iam_role_policy = "IDENTITY_POLICY"
     aws_iam_role = "RESOURCE_POLICY"
     aws_organizations_policy = "SERVICE_CONTROL_POLICY"
+    aws_kms_key = "RESOURCE_POLICY"
 
 class TFPlanPolicyKey(Enum):
     aws_iam_policy = "policy"
     aws_iam_role_policy = "policy"
     aws_iam_role = "assume_role_policy"
-    aws_organizations_policy = "policy"
+    aws_organizations_policy = "content"
+    aws_kms_key = "policy"
 
 if "log_level" in os.environ:
     logger.setLevel(os.environ["log_level"])
@@ -51,7 +53,7 @@ else:
 if "SUPPORTED_POLICY_DOCUMENT" in os.environ:
     SUPPORTED_POLICY_DOCUMENT = os.environ["SUPPORTED_POLICY_DOCUMENT"]
 else:
-    SUPPORTED_POLICY_DOCUMENT = ["aws_iam_policy", "aws_iam_role_policy", "aws_iam_role"]
+    SUPPORTED_POLICY_DOCUMENT = ["aws_iam_policy", "aws_iam_role_policy", "aws_iam_role", "aws_kms_key", "aws_organizations_policy"]
 
 if "CW_LOG_GROUP_NAME" in os.environ:
     LOG_GROUP_NAME = os.environ["CW_LOG_GROUP_NAME"]
@@ -114,7 +116,7 @@ def ia2_handler(plan_resource_changes):
 
     for resource in plan_resource_changes: # look for resource changes and match the supported policy document
         if resource["type"] in SUPPORTED_POLICY_DOCUMENT:
-            logger.debug("Resource : {}".format(json.dumps(resource)))
+            logger.info("Resource : {}".format(json.dumps(resource)))
             ia2_violation_count = analyze_resource_policy_changes(resource) # get the policy difference per resource
             if ia2_violation_count: # calculate total violation count 
                 total_counter = Counter(total_ia2_violation_count)
@@ -126,25 +128,30 @@ def ia2_handler(plan_resource_changes):
     return total_ia2_violation_count
 
 def analyze_resource_policy_changes(resource):
-    if not resource["change"]["after_unknown"]: # skip resource that contain computed value
-        if resource["change"]["after"] != None: # skip any deleted resources
-
+    if "create" in resource["change"]["actions"]: # skip any deleted resources
+        if TFPlanPolicyKey[resource["type"]].value in resource["change"]["after"]: # ensure that the policy is available in plan output
+    
             iam_policy = json.loads(resource["change"]["after"][TFPlanPolicyKey[resource["type"]].value]) # take the new changed policy document
             logger.info("Policy : {}".format(json.dumps(iam_policy)))
-
+    
             ia2_response = validate_policy(json.dumps(iam_policy), IA2PolicyType[resource["type"]].value) # run IAM Access analyzer validation
-            logger.debug("Response : {}".format(ia2_response["findings"]))
+            logger.info("Response : {}".format(ia2_response["findings"]))
 
             ia2_violation_count = get_iam_policy_violation_count(resource, ia2_response) # calculate any IA2 violations
             return ia2_violation_count
-        else:
-            logger.info("New policy is null / deleted")
-            log_helper(LOG_GROUP_NAME, LOG_STREAM_NAME, "resource: {} - policy is null / deleted" .format(resource["address"]))
-
-    elif "policy" in resource["change"]["after_unknown"] and resource["change"]["after_unknown"]["policy"] == True: # unsupported missing computed values
-        logger.info("Unsupported policy due to missing computed values")
-        log_helper(LOG_GROUP_NAME, LOG_STREAM_NAME, "resource: {} - unsupported policy due to missing computed values" .format(resource["address"]))
-
+            
+        elif TFPlanPolicyKey[resource["type"]].value in resource["change"]["after_unknown"] and resource["change"]["after_unknown"][TFPlanPolicyKey[resource["type"]].value] == True: # missing computed values is not supported
+            logger.info("Unsupported policy due to missing computed values")
+            log_helper(LOG_GROUP_NAME, LOG_STREAM_NAME, "resource: {} - unsupported policy due to missing computed values" .format(resource["address"]))
+            
+    elif "delete" in resource["change"]["actions"]:
+        logger.info("New policy is null / deleted")
+        log_helper(LOG_GROUP_NAME, LOG_STREAM_NAME, "resource: {} - policy is null / deleted" .format(resource["address"]))
+    
+    else:
+        logger.error("Unknown / unsupported action")
+        raise
+    
 def get_iam_policy_violation_count(resource, ia2_response):
     ia2_violation_count = {
         "ERROR" : 0,
