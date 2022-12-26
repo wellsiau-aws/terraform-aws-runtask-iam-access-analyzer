@@ -37,6 +37,12 @@ variable "tfc_org" {
   type        = string
 }
 
+variable "workspace_prefix" {
+  description = "TFC workspace name prefix that allowed to run this runtask"
+  type        = string
+  default     = ""
+}
+
 variable "aws_region" {
   description = "The region from which this module will be executed."
   type        = string

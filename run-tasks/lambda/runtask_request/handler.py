@@ -19,7 +19,20 @@ import logging
 import os
 from time import sleep
 
-tfc_org = os.environ['TFC_ORG'];
+if "TFC_ORG" in os.environ:
+    TFC_ORG = os.environ["TFC_ORG"]
+else:
+    TFC_ORG = False
+
+if "WORKSPACE_PREFIX" in os.environ:
+    WORKSPACE_PREFIX = os.environ["WORKSPACE_PREFIX"]
+else:
+    WORKSPACE_PREFIX = False
+
+if "RUNTASK_STAGES" in os.environ:
+    RUNTASK_STAGES = os.environ["RUNTASK_STAGES"]
+else:
+    RUNTASK_STAGES = False
 
 logger = logging.getLogger()
 if 'log_level' in os.environ:
@@ -29,13 +42,25 @@ else:
     logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    # todo:
-    # validate request: https://www.terraform.io/cloud-docs/integrations/run-tasks#securing-your-run-task
-    # send OK
     logger.info(json.dumps(event))
     try:
-      if event["payload"]["detail"]["organization_name"] == tfc_org:
-        return "verified"
+        VERIFY = True
+        if event["payload"]["detail-type"] == "hashicorp-tfc-runtask":
+            if TFC_ORG and event["payload"]["detail"]["organization_name"] != TFC_ORG:
+                logger.error("TFC Org verification failed : {}".format(event["payload"]["detail"]["organization_name"]))
+                VERIFY = False
+            if WORKSPACE_PREFIX and not (str(event["payload"]["detail"]["workspace_name"]).startswith(WORKSPACE_PREFIX)):
+                logger.error("TFC workspace prefix verification failed : {}".format(event["payload"]["detail"]["workspace_name"]))
+                VERIFY = False
+            if RUNTASK_STAGES and not (event["payload"]["detail"]["stage"] in RUNTASK_STAGES):
+                logger.error("TFC Runtask stage verification failed: {}".format(event["payload"]["detail"]["stage"]))
+                VERIFY = False
+
+        if VERIFY:
+            return "verified"
+        else:
+            return "unverified"
+        
     except Exception as e:
         logger.exception("Run Task Request error: {}".format(e))
         raise

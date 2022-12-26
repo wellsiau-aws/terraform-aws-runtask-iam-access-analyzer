@@ -32,7 +32,7 @@
           "BackoffRate": 2
         }
       ],
-      "Next": "runtask_fulfillment",
+      "Next": "verification",
       "Catch": [
         {
           "ErrorEquals": [
@@ -42,9 +42,28 @@
         }
       ]
     },
+
+    "verification" : {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.result.request.status",
+          "StringEquals": "verified",
+          "Next": "runtask_fulfillment"
+        },
+        {
+          "Variable": "$.result.request.status",
+          "StringEquals": "unverified",
+          "Next": "runtask_callback"
+        }
+      ],
+      "Default": "fail"
+    },
+
     "fail": {
       "Type": "Fail"
     },
+
     "runtask_fulfillment": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",

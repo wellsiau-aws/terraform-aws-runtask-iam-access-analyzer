@@ -209,6 +209,7 @@ def log_writer(log_group_name, log_stream_name, log_message, sequence_token = Fa
     return response
 
 def fulfillment_response_helper(total_ia2_violation_count, skip_log = False, override_message = False, override_status = False): # helper function to send response to callback step function
+    runtask_response = {}
 
     # Return message
     if not override_message:
@@ -217,6 +218,7 @@ def fulfillment_response_helper(total_ia2_violation_count, skip_log = False, ove
     else:
         fulfillment_output = override_message
     logger.info("Summary : " + fulfillment_output)
+    runtask_response["message"] = fulfillment_output
 
     # Hyperlink to CloudWatch log
     if not skip_log:
@@ -225,8 +227,7 @@ def fulfillment_response_helper(total_ia2_violation_count, skip_log = False, ove
         else:
             fulfillment_logs_link = "https://console.aws.amazon.com"
         logger.info("Logs : " + fulfillment_logs_link)
-    else:
-        fulfillment_logs_link = False
+        runtask_response["link"] = fulfillment_logs_link
 
     # Run Tasks status
     if not override_status:
@@ -237,12 +238,9 @@ def fulfillment_response_helper(total_ia2_violation_count, skip_log = False, ove
     else:
         fulfillment_status = override_status
     logger.info("Status : " + fulfillment_status)
+    runtask_response["status"] = fulfillment_status
     
-    return {
-        "status": fulfillment_status,
-        "message": fulfillment_output,
-        "link" : fulfillment_logs_link
-    }
+    return runtask_response
 
 def __build_standard_headers(api_token): # TFC API header
     return {

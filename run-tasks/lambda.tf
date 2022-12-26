@@ -35,8 +35,6 @@ resource "aws_cloudwatch_log_group" "runtask_eventbridge" {
   retention_in_days = var.cloudwatch_log_group_retention
 }
 
-
-
 ################# RunTask Request ##################
 resource "aws_lambda_function" "runtask_request" {
   function_name    = "${var.name_prefix}-runtask-request"
@@ -53,7 +51,9 @@ resource "aws_lambda_function" "runtask_request" {
   reserved_concurrent_executions = local.lambda_reserved_concurrency
   environment {
     variables = {
-      TFC_ORG = "${var.tfc_org}"
+      TFC_ORG          = var.tfc_org
+      RUNTASK_STAGES   = join(",", var.runtask_stages)
+      WORKSPACE_PREFIX = length(var.workspace_prefix) > 0 ? var.workspace_prefix : null
     }
   }
   #checkov:skip=CKV_AWS_116:not using DLQ

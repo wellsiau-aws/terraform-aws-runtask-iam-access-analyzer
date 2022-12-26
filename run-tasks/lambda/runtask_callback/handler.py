@@ -34,16 +34,23 @@ def lambda_handler(event, context):
         endpoint = event["payload"]["detail"]["task_result_callback_url"]
         access_token = event["payload"]["detail"]["access_token"]
         headers = __build_standard_headers(access_token)
-        payload = {
-            "data": {
-                "attributes": {
-                    "status": event["payload"]["result"]["fulfillment"]["status"],
-                    "message": event["payload"]["result"]["fulfillment"]["message"],
-                    "url": event["payload"]["result"]["fulfillment"]["link"],
-                },
-                "type": "task-results",
+        if event["payload"]["result"]["request"]["status"] == "unverified": # unverified runtask execution
+            payload = {
+                "data": {
+                    "attributes": {
+                        "status": "failed",
+                        "message": "Verification failed, check TFC org, workspace prefix or Runtasks stage",
+                    },
+                    "type": "task-results",
+                }        
             }
-        }
+        elif event["payload"]["result"]["fulfillment"]["status"] in ["passed", "failed"]: # return from fulfillment regardless of status
+            payload = {
+                "data": {
+                    "attributes": event["payload"]["result"]["fulfillment"],
+                    "type": "task-results",
+                }
+            }
         logger.info("Payload : {}".format(json.dumps(payload)))
         response = __patch(endpoint, headers, bytes(json.dumps(payload), encoding="utf-8"))
         logger.info("TFC response: {}".format(response))
