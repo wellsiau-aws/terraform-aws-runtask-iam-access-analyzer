@@ -49,19 +49,79 @@
         {
           "Variable": "$.result.request.status",
           "StringEquals": "verified",
-          "Next": "runtask_fulfillment"
+          "Next": "verified"
         },
         {
           "Variable": "$.result.request.status",
           "StringEquals": "unverified",
-          "Next": "runtask_callback"
+          "Next": "unverified"
         }
       ],
       "Default": "fail"
     },
 
-    "fail": {
-      "Type": "Fail"
+    "verified": {
+      "Type": "Pass",
+      "Next": "select_stage"
+    },
+
+    "unverified": {
+      "Type": "Pass",
+      "Next": "runtask_callback"
+    },
+
+    "select_stage": {
+      "Type" : "Choice",
+      "Choices": [
+        {
+          "Variable": "$.detail.stage",
+          "StringEquals": "post_plan",
+          "Next": "post_plan"
+        },
+        {
+          "Variable": "$.detail.stage",
+          "StringEquals": "pre_plan",
+          "Next": "pre_plan"
+        },
+        {
+          "Variable": "$.detail.stage",
+          "StringEquals": "pre_apply",
+          "Next": "pre_apply"
+        }
+      ],
+      "Default": "post_plan"
+    },
+
+    "post_plan": {
+      "Type": "Pass",
+      "ResultPath": "$.result.stage",
+      "Result": {
+        "status": "implemented"
+      },
+      "Next": "runtask_fulfillment"
+    },
+
+    "pre_plan": {
+      "Type": "Pass",
+      "ResultPath": "$.result.stage",
+      "Result": {
+        "status": "not implemented"
+      },
+      "Next": "not_implemented"
+    },
+
+    "pre_apply": {
+      "Type": "Pass",
+      "ResultPath": "$.result.stage",
+      "Result": {
+        "status": "not implemented"
+      },
+      "Next": "not_implemented"
+    },
+
+    "not_implemented": {
+      "Type": "Pass",
+      "Next": "runtask_callback"
     },
 
     "runtask_fulfillment": {
@@ -105,6 +165,7 @@
         }
       ]
     },
+
     "runtask_callback": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
@@ -134,8 +195,21 @@
           "BackoffRate": 2
         }
       ],
-      "Next": "success"
+      "Next": "success",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "fail"
+        }
+      ]
     },
+
+    "fail": {
+      "Type": "Fail"
+    },
+
     "success": {
       "Type": "Succeed"
     }

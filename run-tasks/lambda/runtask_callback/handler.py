@@ -31,15 +31,22 @@ else:
 def lambda_handler(event, context):
     logger.info(json.dumps(event))
     try:
-        endpoint = event["payload"]["detail"]["task_result_callback_url"]
-        access_token = event["payload"]["detail"]["access_token"]
-        headers = __build_standard_headers(access_token)
         if event["payload"]["result"]["request"]["status"] == "unverified": # unverified runtask execution
             payload = {
                 "data": {
                     "attributes": {
                         "status": "failed",
                         "message": "Verification failed, check TFC org, workspace prefix or Runtasks stage",
+                    },
+                    "type": "task-results",
+                }        
+            }
+        elif event["payload"]["result"]["stage"]["status"] == "not implemented": # unimplemented runtask stage
+            payload = {
+                "data": {
+                    "attributes": {
+                        "status": "failed",
+                        "message": "Runtask is not configured to run on this stage {}".format(event["payload"]["detail"]["stage"]),
                     },
                     "type": "task-results",
                 }        
@@ -52,6 +59,11 @@ def lambda_handler(event, context):
                 }
             }
         logger.info("Payload : {}".format(json.dumps(payload)))
+
+        # Send runtask callback response to TFC 
+        endpoint = event["payload"]["detail"]["task_result_callback_url"]
+        access_token = event["payload"]["detail"]["access_token"]
+        headers = __build_standard_headers(access_token)
         response = __patch(endpoint, headers, bytes(json.dumps(payload), encoding="utf-8"))
         logger.info("TFC response: {}".format(response))
         return "completed"
