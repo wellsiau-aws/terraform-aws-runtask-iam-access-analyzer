@@ -17,6 +17,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import json
 import logging
 import os
+import re
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -27,6 +28,11 @@ if 'log_level' in os.environ:
     logger.info("Log level set to %s" % logger.getEffectiveLevel())
 else:
     logger.setLevel(logging.INFO)
+
+if "TFC_HOST_NAME" in os.environ:
+    TFC_HOST_NAME = os.environ["TFC_HOST_NAME"]
+else:
+    TFC_HOST_NAME = "app.terraform.io"
 
 def lambda_handler(event, context):
     logger.info(json.dumps(event))
@@ -86,12 +92,19 @@ def __build_standard_headers(api_token):
 def __patch(endpoint, headers, payload):
     request = Request(endpoint, headers=headers or {}, data=payload, method = "PATCH")
     try:
-        with urlopen(request, timeout=10) as response:
-            return response.read(), response
+        if validate_endpoint(endpoint):
+            with urlopen(request, timeout=10) as response: #nosec URL validation 
+                return response.read(), response
+        else:
+            raise URLError("Invalid endpoint URL, expected host is: {}".format(TFC_HOST_NAME))
     except HTTPError as error:
         logger.error(error.status, error.reason)
     except URLError as error:
         logger.error(error.reason)
     except TimeoutError:
         logger.error("Request timed out")
-    
+
+def validate_endpoint(endpoint): # validate that the endpoint hostname is valid
+    pattern = "^https:\/\/" + str(TFC_HOST_NAME).replace(".", "\.") + "\/"+ ".*"    
+    result = re.match(pattern, endpoint)
+    return result

@@ -33,6 +33,7 @@ resource "aws_lambda_function_url" "runtask_eventbridge" {
 resource "aws_cloudwatch_log_group" "runtask_eventbridge" {
   name              = "/aws/lambda/${aws_lambda_function.runtask_eventbridge.function_name}"
   retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
 }
 
 ################# RunTask Request ##################
@@ -58,15 +59,15 @@ resource "aws_lambda_function" "runtask_request" {
   }
   #checkov:skip=CKV_AWS_116:not using DLQ
   #checkov:skip=CKV_AWS_117:VPC is not required
+  #checkov:skip=CKV_AWS_173:no sensitive data in env var
   #checkov:skip=CKV_AWS_272:skip code-signing
 }
 
 resource "aws_cloudwatch_log_group" "runtask_request" {
   name              = "/aws/lambda/${aws_lambda_function.runtask_request.function_name}"
   retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
 }
-
-
 
 ################# RunTask Callback ##################
 resource "aws_lambda_function" "runtask_callback" {
@@ -90,9 +91,8 @@ resource "aws_lambda_function" "runtask_callback" {
 resource "aws_cloudwatch_log_group" "runtask_callback" {
   name              = "/aws/lambda/${aws_lambda_function.runtask_callback.function_name}"
   retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
 }
-
-
 
 ################# RunTask Fulfillment ##################
 resource "aws_lambda_function" "runtask_fulfillment" {
@@ -116,15 +116,18 @@ resource "aws_lambda_function" "runtask_fulfillment" {
   }
   #checkov:skip=CKV_AWS_116:not using DLQ
   #checkov:skip=CKV_AWS_117:VPC is not required
+  #checkov:skip=CKV_AWS_173:no sensitive data in env var
   #checkov:skip=CKV_AWS_272:skip code-signing
 }
 
 resource "aws_cloudwatch_log_group" "runtask_fulfillment" {
   name              = "/aws/lambda/${aws_lambda_function.runtask_fulfillment.function_name}"
   retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
 }
 
 resource "aws_cloudwatch_log_group" "runtask_fulfillment_output" {
   name              = local.cloudwatch_log_group_name
   retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
 }

@@ -20,6 +20,7 @@ import os
 import boto3
 import time
 import yaml
+import re
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -43,6 +44,11 @@ if "SUPPORTED_POLICY_DOCUMENT" in os.environ:
     SUPPORTED_POLICY_DOCUMENT = os.environ["SUPPORTED_POLICY_DOCUMENT"]
 else:
     SUPPORTED_POLICY_DOCUMENT = False # default to False and then load it from config file default.yaml
+
+if "TFC_HOST_NAME" in os.environ:
+    TFC_HOST_NAME = os.environ["TFC_HOST_NAME"]
+else:
+    TFC_HOST_NAME = "app.terraform.io"
 
 IAM_ACCESS_ANALYZER_COUNTER = {
     "ERROR" : 0,
@@ -300,14 +306,22 @@ def __build_standard_headers(api_token): # TFC API header
 def __get(endpoint, headers): # HTTP request helper function
     request = Request(endpoint, headers=headers or {}, method = "GET")
     try:
-        with urlopen(request, timeout=10) as response:
-            return response.read(), response
+        if validate_endpoint(endpoint):
+            with urlopen(request, timeout=10) as response: #nosec URL validation 
+                return response.read(), response
+        else:
+            raise URLError("Invalid endpoint URL, expected host is: {}".format(TFC_HOST_NAME))
     except HTTPError as error:
         logger.error(error.status, error.reason)
     except URLError as error:
         logger.error(error.reason)
     except TimeoutError:
         logger.error("Request timed out")
+
+def validate_endpoint(endpoint): # validate that the endpoint hostname is valid
+    pattern = "^https:\/\/" + str(TFC_HOST_NAME).replace(".", "\.") + "\/"+ ".*"    
+    result = re.match(pattern, endpoint)
+    return result
 
 def load_config(file_name): # load the config file
     global iamConfigMap
