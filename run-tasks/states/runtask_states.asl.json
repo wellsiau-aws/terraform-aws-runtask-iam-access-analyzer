@@ -141,7 +141,7 @@
       "ResultSelector": {
         "status.$": "$.Payload.status",
         "message.$": "$.Payload.message",
-        "link.$": "$.Payload.link"
+        "url.$": "$.Payload.url"
       },
       "Retry": [
         {

@@ -31,6 +31,10 @@ else:
 def lambda_handler(event, context):
     logger.info(json.dumps(event))
     try:
+        # trim empty url from the payload
+        if event["payload"]["result"]["fulfillment"]["url"] == False:
+            event["payload"]["result"]["fulfillment"].pop("url")
+
         if event["payload"]["result"]["request"]["status"] == "unverified": # unverified runtask execution
             payload = {
                 "data": {
@@ -58,6 +62,7 @@ def lambda_handler(event, context):
                     "type": "task-results",
                 }
             }
+        
         logger.info("Payload : {}".format(json.dumps(payload)))
 
         # Send runtask callback response to TFC 
