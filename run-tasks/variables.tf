@@ -10,6 +10,12 @@ variable "event_bus_name" {
   default     = "default"
 }
 
+variable "cloudwatch_log_group_name" {
+  description = "RunTask CloudWatch log group name"
+  type        = string
+  default     = "/hashicorp/terraform/runtask/iam-access-analyzer/"
+}
+
 variable "cloudwatch_log_group_retention" {
   description = "Lambda CloudWatch log group retention period"
   type        = string
@@ -39,6 +45,12 @@ variable "tfc_org" {
 
 variable "workspace_prefix" {
   description = "TFC workspace name prefix that allowed to run this runtask"
+  type        = string
+  default     = ""
+}
+
+variable "supported_policy_document" {
+  description = "(Optional) allow list of the supported IAM policy document"
   type        = string
   default     = ""
 }

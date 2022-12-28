@@ -111,6 +111,7 @@ resource "aws_lambda_function" "runtask_fulfillment" {
   environment {
     variables = {
       CW_LOG_GROUP_NAME = local.cloudwatch_log_group_name
+      SUPPORTED_POLICY_DOCUMENT = length(var.supported_policy_document) > 0 ? var.supported_policy_document : null
     }
   }
   #checkov:skip=CKV_AWS_116:not using DLQ
