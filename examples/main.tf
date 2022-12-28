@@ -72,6 +72,35 @@ resource "aws_iam_policy" "policy_with_data_source" {
 resource "aws_iam_role" "invalid_assume_role" {
   count              = var.flag_deploy_invalid_resource ? 1 : 0
   assume_role_policy = templatefile("${path.module}/iam/trust-policies/invalid-trust.tpl", { none = "none" })
+  inline_policy {
+    name = "inline_policy_with_invalid_version"
+
+    policy = jsonencode({
+      Version = "2022-10-17"
+      Statement = [
+        {
+          Action   = ["ec2:Describe*"]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+      ]
+    })
+  }
+
+  inline_policy {
+    name = "inline_policy_with_invalid_effect"
+
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action   = ["ec2:Describe*"]
+          Effect   = "Permit"
+          Resource = "*"
+        },
+      ]
+    })
+  }
 }
 
 resource "aws_iam_role_policy" "invalid_iam_role_policy" {
@@ -136,3 +165,76 @@ resource "aws_organizations_policy" "invalid_scp_policy" {
 }
 CONTENT
 }
+
+# ==========================================================================
+# SIMPLE IAM POLICY WITH INVALID PERMISSION AND COMPUTED VALUES
+# ==========================================================================
+
+resource "aws_cloudwatch_log_group" "sample_log" {
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+}
+
+resource "aws_iam_policy" "policy_with_computed_values" {
+  # the sample policy below contains invalid iam permissions (syntax-wise)
+  count  = var.flag_deploy_invalid_resource ? 1 : 0
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DuplicateSid",
+      "Action": [
+        "logs:CreateLogGroups"
+      ],
+      "Resource": "${aws_cloudwatch_log_group.sample_log[count.index].arn}",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "DuplicateSid",
+      "Action": [
+        "logs:CreateLogGroup"
+      ],
+      "Resource": "${aws_cloudwatch_log_group.sample_log[count.index].arn}:*:*",
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
+
+# ==========================================================================
+# CODEARTIFACT WITH INVALID POLICY VERSION
+# ==========================================================================
+
+# resource "aws_codeartifact_domain" "example" {
+#   count  = var.flag_deploy_invalid_resource ? 1 : 0
+
+#   domain         = "example"
+# }
+
+# resource "aws_codeartifact_repository" "example" {
+#   count  = var.flag_deploy_invalid_resource ? 1 : 0
+
+#   repository = "example"
+#   domain     = aws_codeartifact_domain.example[count.index].domain
+# }
+
+# resource "aws_codeartifact_repository_permissions_policy" "example" {
+#   count  = var.flag_deploy_invalid_resource ? 1 : 0
+
+#   repository      = aws_codeartifact_repository.example[count.index].repository
+#   domain          = aws_codeartifact_domain.example[count.index].domain
+#   policy_document = <<EOF
+# {
+#     "Version": "2022-10-17",
+#     "Statement": [
+#         {
+#             "Action": "codeartifact:CreateRepository",
+#             "Effect": "Allow",
+#             "Principal": "*",
+#             "Resource": "*"
+#         }
+#     ]
+# }
+# EOF
+# }
