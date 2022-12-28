@@ -42,3 +42,7 @@ terraform.rc
 # Ignore generated buildfiles
 **/build/*
 **/build/
+
+# Ignore security scan results
+**/ash_results/*
+**/ash_results
