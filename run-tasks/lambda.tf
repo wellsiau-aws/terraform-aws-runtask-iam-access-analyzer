@@ -110,7 +110,7 @@ resource "aws_lambda_function" "runtask_fulfillment" {
   reserved_concurrent_executions = local.lambda_reserved_concurrency
   environment {
     variables = {
-      CW_LOG_GROUP_NAME = local.cloudwatch_log_group_name
+      CW_LOG_GROUP_NAME         = local.cloudwatch_log_group_name
       SUPPORTED_POLICY_DOCUMENT = length(var.supported_policy_document) > 0 ? var.supported_policy_document : null
     }
   }
