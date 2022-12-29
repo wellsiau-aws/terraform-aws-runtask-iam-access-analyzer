@@ -9,7 +9,7 @@
             "Effect": "Allow",
             "Sid": "AccessAnalyzerOps"
         },
-                {
+        {
             "Action": [
                 "logs:CreateLogGroup",
                 "logs:CreateLogStream",
@@ -18,6 +18,15 @@
             "Resource": "arn:${data_aws_partition}:logs:${data_aws_region}:${data_aws_account_id}:log-group:${local_log_group_name}/*",
             "Effect": "Allow",
             "Sid": "CloudWatchLogOps"
+        },
+        {
+            "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "XRayTracing"
         }
     ]
 }

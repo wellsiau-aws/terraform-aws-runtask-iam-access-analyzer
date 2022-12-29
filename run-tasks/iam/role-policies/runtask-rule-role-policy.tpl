@@ -9,6 +9,15 @@
             "Resource": [
                 "${resource_runtask_states}"
             ]
+        },
+        {
+            "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "XRayTracing"
         }
     ]
 }
