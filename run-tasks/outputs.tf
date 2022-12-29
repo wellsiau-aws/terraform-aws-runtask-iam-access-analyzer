@@ -3,8 +3,8 @@ output "runtask_hmac" {
   sensitive = true
 }
 
-output "runtask_eventbridge_url" {
-  value = trim(aws_lambda_function_url.runtask_eventbridge.function_url, "/")
+output "runtask_url" {
+  value = var.deploy_waf ? "https://${module.runtask_cloudfront[0].cloudfront_distribution_domain_name}" : trim(aws_lambda_function_url.runtask_eventbridge.function_url, "/")
 }
 
 output "runtask_id" {

@@ -73,3 +73,13 @@ variable "recovery_window" {
     error_message = "Variable var: recovery_window must be between 0 and 30"
   }
 }
+
+variable "deploy_waf" {
+  description = "Set to true to deploy CloudFront and WAF in front of the Lambda function URL"
+  type        = string
+  default     = false
+  validation {
+    condition     = contains(["true", "false"], var.deploy_waf)
+    error_message = "Valid values for var: deploy_waf are true, false"
+  }
+}
