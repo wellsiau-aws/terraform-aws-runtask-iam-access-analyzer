@@ -1,0 +1,10 @@
+terraform-runtask-iam-access-analyzer
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Licensed under the Massachusetts Institute of Technology (MIT) license
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+This software includes third party software subject to the following copyrights:
+
+@yaml/pyyaml under the Massachusetts Institute of Technology (MIT) license

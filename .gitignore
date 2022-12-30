@@ -3,6 +3,7 @@
 
 # Local .terraform directories
 **/.terraform/*
+**/.terraform/
 
 # Terraform lock file
 **/.terraform.lock.hcl
@@ -42,6 +43,8 @@ terraform.rc
 # Ignore generated buildfiles
 **/build/*
 **/build/
+**/site-packages/*
+**/site-packages/
 
 # Ignore security scan results
 **/ash_results/*
