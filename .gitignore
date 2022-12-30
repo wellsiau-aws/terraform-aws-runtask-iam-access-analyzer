@@ -42,6 +42,8 @@ terraform.rc
 # Ignore generated buildfiles
 **/build/*
 **/build/
+**/site-packages/*
+**/site-packages/
 
 # Ignore security scan results
 **/ash_results/*
