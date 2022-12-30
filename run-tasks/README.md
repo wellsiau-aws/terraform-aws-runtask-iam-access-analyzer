@@ -1,11 +1,16 @@
 <!-- BEGIN_TF_DOCS -->
 # terraform-runtask-iam-access-analyzer
 
-This module can be used to integrate Terraform Cloud Run Tasks with AWS IAM Access Analyzer for policy validation.
+Use this module to integrate Terraform Cloud Run Tasks with AWS IAM Access Analyzer for policy validation.
+
+![Diagram](../diagram/RunTask-EventBridge.png)
+
+## Prerequisites
+To use this module you need have the following:
+1. AWS account and credentials
+2. Terraform Cloud with Run Task entitlement (Business subscription or higher)
 
 ## Usage
-
-You must complete the [general prerequisites](../README.md#Prerequisites) as referenced in the solution README before deploying this module.
 
 * Build and package the Lambda files
 
@@ -40,9 +45,9 @@ You must complete the [general prerequisites](../README.md#Prerequisites) as ref
   terraform init
   ```
 
-* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in Terraform Cloud, i.e. using environment variable.
+* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in Terraform Cloud, i.e. using environment variable / variable sets.
 
-* In order to create and configure the run tasks, you also need to have Terraform Cloud keys stored as Variable/Variable Sets in the workspace. Add `TFE_HOSTNAME` and `TFE_TOKEN` environment variable to the same variable set or directly on the workspace.
+* In order to create and configure the run tasks, you also need to have Terraform Cloud token stored as Variable/Variable Sets in the workspace. Add `TFE_HOSTNAME` and `TFE_TOKEN` environment variable to the same variable set or directly on the workspace.
 ![TFC Configure Variable Set](../diagram/TerraformCloud-VariableSets.png?raw=true "Configure Terraform Cloud Variable Set")
 
 * Run Terraform apply
@@ -52,7 +57,53 @@ You must complete the [general prerequisites](../README.md#Prerequisites) as ref
 
 * Navigate to your Terraform Cloud organization, go to Organization Settings > Integrations > Run tasks to find the newly created Run Task `aws-ia2-runtask`.
 
-You can use this run task in any workspace where you have standard IAM resource policy document. Use the example steps below to continue with the demonstration.
+You can use this run task in any workspace where you have standard IAM resource policy document. Refer to the [examples](./examples) for more details.
+
+## Limitations
+
+1. Does not provide verbose error / warning messages in Run Task console. In the future, we will explore possibility to provide verbose logging.
+
+2. Does not support Terraform [computed resources](https://www.terraform.io/plugin/sdkv2/schemas/schema-behaviors).
+For example, the tool will report no IAM policy found for the following Terraform template. The policy json string is a computed resource. The plan output doesn't contain information of IAM policy document.
+
+    ```
+    resource "aws_s3_bucket" "b" {
+      bucket = "my-tf-test-bucket"
+
+      tags = {
+        Name        = "My bucket"
+        Environment = "Dev"
+      }
+    }
+
+    resource "aws_iam_policy" "policy" {
+      name        = "test-policy"
+      description = "A test policy"
+
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Action = [
+              "s3:GetObject",
+            ]
+            Effect   = "Allow"
+            Resource = "${aws_s3_bucket.b.id}"
+          }
+        ]
+      })
+    }
+    ```
+
+## Best practice
+
+* **Do not** re-use the Run Tasks URL across different trust-boundary (organizations, accounts, team). We recommend you to deploy separate Run Task deployment per trust-boundary.
+
+* **Do not** use Run Tasks URL from untrusted party, remember that Run Tasks execution sent Terraform plan output to the Run Task endpoint. Only use trusted Run Tasks URL.
+
+* Enable the AWS WAF setup by setting variable `deploy_waf` to `true` (additional cost will apply). This will add WAF protection to the Run Tasks URL endpoint.
+
+* We recommend you to setup additional CloudWatch alarm to monitor Lambda concurrency and WAF rules.
 
 ## Requirements
 
@@ -67,6 +118,7 @@ You can use this run task in any workspace where you have standard IAM resource 
 |------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 4.38.0 |
+| <a name="provider_aws.cloudfront_waf"></a> [aws.cloudfront\_waf](#provider\_aws.cloudfront\_waf) | 4.38.0 |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 | <a name="provider_tfe"></a> [tfe](#provider\_tfe) | ~>0.38.0 |
 
@@ -89,6 +141,7 @@ You can use this run task in any workspace where you have standard IAM resource 
 | [aws_cloudwatch_log_group.runtask_fulfillment_output](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/cloudwatch_log_group) | resource |
 | [aws_cloudwatch_log_group.runtask_request](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/cloudwatch_log_group) | resource |
 | [aws_cloudwatch_log_group.runtask_states](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/cloudwatch_log_group) | resource |
+| [aws_cloudwatch_log_group.runtask_waf](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/cloudwatch_log_group) | resource |
 | [aws_iam_role.runtask_callback](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/iam_role) | resource |
 | [aws_iam_role.runtask_eventbridge](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/iam_role) | resource |
 | [aws_iam_role.runtask_fulfillment](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/iam_role) | resource |
@@ -108,9 +161,14 @@ You can use this run task in any workspace where you have standard IAM resource 
 | [aws_lambda_function.runtask_fulfillment](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/lambda_function) | resource |
 | [aws_lambda_function.runtask_request](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/lambda_function) | resource |
 | [aws_lambda_function_url.runtask_eventbridge](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/lambda_function_url) | resource |
+| [aws_secretsmanager_secret.runtask_cloudfront](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/secretsmanager_secret) | resource |
 | [aws_secretsmanager_secret.runtask_hmac](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret_version.runtask_cloudfront](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/secretsmanager_secret_version) | resource |
 | [aws_secretsmanager_secret_version.runtask_hmac](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/secretsmanager_secret_version) | resource |
 | [aws_sfn_state_machine.runtask_states](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/sfn_state_machine) | resource |
+| [aws_wafv2_web_acl.runtask_waf](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/wafv2_web_acl) | resource |
+| [aws_wafv2_web_acl_logging_configuration.runtask_waf](https://registry.terraform.io/providers/hashicorp/aws/4.38.0/docs/resources/wafv2_web_acl_logging_configuration) | resource |
+| [random_uuid.runtask_cloudfront](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) | resource |
 | [random_uuid.runtask_hmac](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) | resource |
 | [tfe_organization_run_task.aws_iam_analyzer](https://registry.terraform.io/providers/hashicorp/tfe/latest/docs/resources/organization_run_task) | resource |
 | [archive_file.runtask_callback](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
@@ -133,10 +191,14 @@ You can use this run task in any workspace where you have standard IAM resource 
 | <a name="input_deploy_waf"></a> [deploy\_waf](#input\_deploy\_waf) | Set to true to deploy CloudFront and WAF in front of the Lambda function URL | `string` | `false` | no |
 | <a name="input_event_bus_name"></a> [event\_bus\_name](#input\_event\_bus\_name) | EventBridge event bus name | `string` | `"default"` | no |
 | <a name="input_event_source"></a> [event\_source](#input\_event\_source) | EventBridge source name | `string` | `"app.terraform.io"` | no |
+| <a name="input_lambda_default_timeout"></a> [lambda\_default\_timeout](#input\_lambda\_default\_timeout) | Lambda default timeout in seconds | `number` | `30` | no |
+| <a name="input_lambda_reserved_concurrency"></a> [lambda\_reserved\_concurrency](#input\_lambda\_reserved\_concurrency) | Maximum Lambda reserved concurrency, make sure your AWS quota is sufficient | `number` | `100` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Name to be used on all the resources as identifier. | `string` | `"aws-ia2"` | no |
 | <a name="input_recovery_window"></a> [recovery\_window](#input\_recovery\_window) | Numbers of day Number of days that AWS Secrets Manager waits before it can delete the secret | `number` | `0` | no |
 | <a name="input_runtask_stages"></a> [runtask\_stages](#input\_runtask\_stages) | List of all supported RunTask stages | `list(string)` | <pre>[<br>  "pre_plan",<br>  "post_plan",<br>  "pre_apply"<br>]</pre> | no |
 | <a name="input_supported_policy_document"></a> [supported\_policy\_document](#input\_supported\_policy\_document) | (Optional) allow list of the supported IAM policy document | `string` | `""` | no |
+| <a name="input_waf_managed_rule_set"></a> [waf\_managed\_rule\_set](#input\_waf\_managed\_rule\_set) | List of AWS Managed rules to use inside the WAF ACL | `list(map(string))` | <pre>[<br>  {<br>    "metric_suffix": "common",<br>    "name": "AWSManagedRulesCommonRuleSet",<br>    "priority": 10,<br>    "vendor_name": "AWS"<br>  },<br>  {<br>    "metric_suffix": "bad_input",<br>    "name": "AWSManagedRulesKnownBadInputsRuleSet",<br>    "priority": 20,<br>    "vendor_name": "AWS"<br>  }<br>]</pre> | no |
+| <a name="input_waf_rate_limit"></a> [waf\_rate\_limit](#input\_waf\_rate\_limit) | Rate limit for request coming to WAF | `number` | `100` | no |
 | <a name="input_workspace_prefix"></a> [workspace\_prefix](#input\_workspace\_prefix) | TFC workspace name prefix that allowed to run this runtask | `string` | `""` | no |
 
 ## Outputs

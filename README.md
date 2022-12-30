@@ -174,14 +174,12 @@ For example, the tool will report no IAM policy found for the following Terrafor
     }
     ```
 
-3. Does not support `inline_policy` and `managed_policy_arns` inside of `aws_iam_role`. This solution only inspect the `assume_role_policy` for `aws_iam_role` resource. To inspect IAM policy attached to `aws_iam_role` resource, we recommend to use `aws_iam_role_policy`.
-
-## Best practice
+# Best practice
 
 * **Do not** re-use the Run Tasks URL across different trust-boundary (organizations, accounts, team). We recommend you to deploy separate Run Task deployment per trust-boundary.
 
 * **Do not** use Run Tasks URL from untrusted party, remember that Run Tasks execution sent Terraform plan output to the Run Task endpoint. Only use trusted Run Tasks URL.
 
-* Enable the AWS WAF setup by setting variable `deploy_waf` to `true`, additional cost apply. This will add WAF protection on top of the Run Tasks URL endpoint.
+* Enable the AWS WAF setup by setting variable `deploy_waf` to `true` (additional cost will apply). This will add WAF protection to the Run Tasks URL endpoint.
 
 * We recommend you to setup additional CloudWatch alarm to monitor Lambda concurrency and WAF rules.
