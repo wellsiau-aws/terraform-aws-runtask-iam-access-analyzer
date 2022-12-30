@@ -74,6 +74,18 @@ variable "recovery_window" {
   }
 }
 
+variable "lambda_reserved_concurrency" {
+  description = "Maximum Lambda reserved concurrency, make sure your AWS quota is sufficient"
+  type        = number
+  default     = 100
+}
+
+variable "lambda_default_timeout" {
+  description = "Lambda default timeout in seconds"
+  type        = number
+  default     = 30
+}
+
 variable "deploy_waf" {
   description = "Set to true to deploy CloudFront and WAF in front of the Lambda function URL"
   type        = string
@@ -82,6 +94,12 @@ variable "deploy_waf" {
     condition     = contains(["true", "false"], var.deploy_waf)
     error_message = "Valid values for var: deploy_waf are true, false"
   }
+}
+
+variable "waf_rate_limit" {
+  description = "Rate limit for request coming to WAF"
+  type        = number
+  default     = 100
 }
 
 variable "waf_managed_rule_set" {
