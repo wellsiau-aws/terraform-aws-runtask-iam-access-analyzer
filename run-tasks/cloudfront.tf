@@ -18,6 +18,7 @@ module "runtask_cloudfront" {
         origin_protocol_policy = "https-only"
         origin_ssl_protocols   = ["TLSv1.2"]
       }
+      custom_header = var.deploy_waf ? [local.cloudfront_custom_header] : null
     }
   }
 
@@ -56,7 +57,8 @@ resource "aws_cloudfront_origin_request_policy" "runtask_cloudfront" {
         "x-tfc-task-signature",
         "content-type",
         "user-agent",
-      "x-amzn-trace-id"]
+        "x-amzn-trace-id"
+      ]
     }
   }
 

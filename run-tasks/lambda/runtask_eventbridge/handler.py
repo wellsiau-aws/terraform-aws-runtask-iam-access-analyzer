@@ -23,6 +23,7 @@ import urllib.parse
 import base64
 import hmac
 import hashlib
+import logging
 from cgi import parse_header
 import boto3
 import botocore
@@ -33,7 +34,25 @@ client = botocore.session.get_session().create_client('secretsmanager')
 cache_config = SecretCacheConfig()
 cache = SecretCache(config=cache_config, client=client)
 
-tfc_hmac_secret_arn = os.environ.get('TFC_HMAC_SECRET_ARN')
+logger = logging.getLogger()
+if 'log_level' in os.environ:
+    logger.setLevel(os.environ['log_level'])
+    logger.info("Log level set to %s" % logger.getEffectiveLevel())
+else:
+    logger.setLevel(logging.INFO)
+
+if "TFC_HMAC_SECRET_ARN" in os.environ:
+    tfc_hmac_secret_arn = os.environ.get('TFC_HMAC_SECRET_ARN')
+
+if "TFC_USE_WAF" in os.environ:
+    tfc_use_waf = os.environ.get('TFC_USE_WAF')
+
+if "TFC_CF_SECRET_ARN" in os.environ:    
+    tfc_cf_secret_arn = os.environ.get('TFC_CF_SECRET_ARN')
+
+if "TFC_CF_SIGNATURE" in os.environ:    
+    tfc_cf_signature = os.environ.get('TFC_CF_SIGNATURE')
+
 event_bus_name = os.environ.get('EVENT_BUS_NAME', 'default')
 
 event_bridge_client = boto3.client('events')
@@ -52,7 +71,8 @@ class PutEventError(Exception):
 
 def lambda_handler(event, _context):
     """RunTask function"""
-    print(json.dumps(event))
+    logger.info(json.dumps(event))
+    
     headers = event.get('headers')
     # Input validation
     try:
@@ -67,9 +87,13 @@ def lambda_handler(event, _context):
 
     detail_type = 'hashicorp-tfc-runtask'
     try:
+        if tfc_use_waf == "True" and not contains_valid_cloudfront_signature(event=event):
+            print_error('401 Unauthorized - Invalid CloudFront Signature', headers)
+            return {'statusCode': 401, 'body': 'Invalid CloudFront Signature'}
+
         if not contains_valid_signature(event=event):
-            print_error('401 Unauthorized - Invalid Signature', headers)
-            return {'statusCode': 401, 'body': 'Invalid Signature'}
+            print_error('401 Unauthorized - Invalid Payload Signature', headers)
+            return {'statusCode': 401, 'body': 'Invalid Payload Signature'}
 
         response = forward_event(json_payload, detail_type)
 
@@ -98,6 +122,17 @@ def normalize_payload(raw_payload, is_base64_encoded):
         return base64.b64decode(raw_payload).decode('utf-8')
     return raw_payload
 
+def contains_valid_cloudfront_signature(event): # Check for the special header value from CloudFront
+    try:
+        secret = cache.get_secret_string(tfc_cf_secret_arn)
+        payload_signature = event["headers"]["x-cf-sig"]
+        if secret == payload_signature:
+            return True
+        else:
+            return False
+    except:
+        logger.error("Unable to validate CloudFront custom header signature value")
+        return False
 
 def contains_valid_signature(event):
     """Check for the payload signature
@@ -182,4 +217,4 @@ def get_content_type(headers):
 
 def print_error(message, headers):
     """Helper function to print errors"""
-    print(f'ERROR: {message}\nHeaders: {str(headers)}')
+    logger.error(f'ERROR: {message}\nHeaders: {str(headers)}')

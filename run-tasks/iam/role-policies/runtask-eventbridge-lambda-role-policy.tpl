@@ -6,9 +6,9 @@
                 "secretsmanager:DescribeSecret",
                 "secretsmanager:GetSecretValue"
             ],
-            "Resource": "${resource_runtask_hmac}",
+            "Resource": ${jsonencode(resource_runtask_secrets)},
             "Effect": "Allow",
-            "Sid": "SecretsManagerGetHMAC"
+            "Sid": "SecretsManagerGet"
         },
         {
             "Action": "events:PutEvents",

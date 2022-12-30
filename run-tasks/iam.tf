@@ -14,11 +14,11 @@ resource "aws_iam_role_policy" "runtask_eventbridge" {
   name = "${var.name_prefix}-runtask-eventbridge-policy"
   role = aws_iam_role.runtask_eventbridge.id
   policy = templatefile("${path.module}/iam/role-policies/runtask-eventbridge-lambda-role-policy.tpl", {
-    data_aws_region       = data.aws_region.current_region.name
-    data_aws_account_id   = data.aws_caller_identity.current_account.account_id
-    data_aws_partition    = data.aws_partition.current_partition.partition
-    var_event_bus_name    = var.event_bus_name
-    resource_runtask_hmac = aws_secretsmanager_secret.runtask_hmac.arn
+    data_aws_region          = data.aws_region.current_region.name
+    data_aws_account_id      = data.aws_caller_identity.current_account.account_id
+    data_aws_partition       = data.aws_partition.current_partition.partition
+    var_event_bus_name       = var.event_bus_name
+    resource_runtask_secrets = var.deploy_waf ? [aws_secretsmanager_secret.runtask_hmac.arn, aws_secretsmanager_secret.runtask_cloudfront[0].arn] : [aws_secretsmanager_secret.runtask_hmac.arn]
   })
 }
 

@@ -104,18 +104,18 @@ variable "waf_rate_limit" {
 
 variable "waf_managed_rule_set" {
   description = "List of AWS Managed rules to use inside the WAF ACL"
-  type = list(map(string))
+  type        = list(map(string))
   default = [
     {
-      name     = "AWSManagedRulesCommonRuleSet"
-      priority = 10
-      vendor_name = "AWS"
+      name          = "AWSManagedRulesCommonRuleSet"
+      priority      = 10
+      vendor_name   = "AWS"
       metric_suffix = "common"
     },
     {
-      name     = "AWSManagedRulesKnownBadInputsRuleSet"
-      priority = 20
-      vendor_name = "AWS"
+      name          = "AWSManagedRulesKnownBadInputsRuleSet"
+      priority      = 20
+      vendor_name   = "AWS"
       metric_suffix = "bad_input"
     }
   ]

@@ -5,4 +5,5 @@ resource "tfe_organization_run_task" "aws_iam_analyzer" {
   enabled      = true
   hmac_key     = aws_secretsmanager_secret_version.runtask_hmac.secret_string
   description  = "Run Task integration with AWS IAM Access Analyzer"
+  depends_on   = aws_lambda_function.runtask_eventbridge # explicit dependency for URL verification
 }

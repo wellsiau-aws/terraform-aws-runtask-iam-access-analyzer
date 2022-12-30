@@ -11,6 +11,9 @@ resource "aws_lambda_function" "runtask_eventbridge" {
   environment {
     variables = {
       TFC_HMAC_SECRET_ARN = aws_secretsmanager_secret.runtask_hmac.arn
+      TFC_USE_WAF         = var.deploy_waf ? "True" : "False"
+      TFC_CF_SECRET_ARN   = var.deploy_waf ? aws_secretsmanager_secret.runtask_cloudfront[0].arn : null
+      TFC_CF_SIGNATURE    = var.deploy_waf ? local.cloudfront_sig_name : null
       EVENT_BUS_NAME      = var.event_bus_name
     }
   }
