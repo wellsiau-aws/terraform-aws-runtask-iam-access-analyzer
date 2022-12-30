@@ -5,4 +5,5 @@ locals {
   lambda_python_runtime       = "python3.9"
   cloudwatch_log_group_name   = var.cloudwatch_log_group_name
   waf_deployment              = var.deploy_waf ? 1 : 0
+  waf_rate_limit              = 100
 }

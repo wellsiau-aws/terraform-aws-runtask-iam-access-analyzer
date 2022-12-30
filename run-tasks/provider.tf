@@ -2,7 +2,7 @@ terraform {
 
   cloud {
     # TODO: Change this to your Terraform Cloud org name.
-    organization = "<your tfc organization>"
+    organization = "wellsiau-org"
     workspaces {
       tags = ["app:aws-event-bridge"]
     }
@@ -22,6 +22,11 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+}
+
+provider "aws" { # for Cloudfront WAF only
+  region = "us-east-1"
+  alias  = "cloudfront_waf"
 }
 
 provider "tfe" {

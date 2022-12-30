@@ -1,63 +1,85 @@
-module "runtask_cloudfront" {
-  count  = local.waf_deployment
-  source = "terraform-aws-modules/cloudfront/aws"
+resource "aws_wafv2_web_acl" "runtask_waf" {
+  count    = local.waf_deployment
+  provider = aws.cloudfront_waf
 
-  comment             = "CloudFront for RunTask integration: ${var.name_prefix}"
-  enabled             = true
-  price_class         = "PriceClass_All"
-  retain_on_delete    = false
-  wait_for_deployment = false
+  name        = "${var.name_prefix}-runtask_waf_acl"
+  description = "Run Task WAF with simple rate base rules"
+  scope       = "CLOUDFRONT"
 
-  origin = {
-    runtask_eventbridge = {
-      domain_name = split("/", aws_lambda_function_url.runtask_eventbridge.function_url)[2]
-      custom_origin_config = {
-        http_port              = 80
-        https_port             = 443
-        origin_protocol_policy = "https-only"
-        origin_ssl_protocols   = ["TLSv1.2"]
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "rate-base-limit"
+    priority = 1
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = local.waf_rate_limit
+        aggregate_key_type = "IP"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.name_prefix}-runtask_request_rate"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  dynamic "rule" {
+    for_each = var.waf_managed_rule_set
+    content {
+      name     = rule.value.name
+      priority = rule.value.priority
+
+      override_action {
+        none {}
+      }
+
+      statement {
+        managed_rule_group_statement {
+          name        = rule.value.name
+          vendor_name = rule.value.vendor_name
+        }
+      }
+
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "${var.name_prefix}-runtask_request_${rule.value.metric_suffix}"
+        sampled_requests_enabled   = true
       }
     }
   }
 
-  default_cache_behavior = {
-    target_origin_id       = "runtask_eventbridge"
-    viewer_protocol_policy = "https-only"
-
-    # caching disabled: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-caching-disabled
-    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-
-    origin_request_policy_id = aws_cloudfront_origin_request_policy.runtask_cloudfront[count.index].id
-    use_forwarded_values     = false
-
-    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods  = ["GET", "HEAD", "OPTIONS"]
-
-  }
-
-  viewer_certificate = {
-    cloudfront_default_certificate = true
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.name_prefix}-runtask_waf_acl"
+    sampled_requests_enabled   = true
   }
 }
 
-resource "aws_cloudfront_origin_request_policy" "runtask_cloudfront" {
-  count   = local.waf_deployment
-  name    = "${var.name_prefix}-runtask_cloudfront_origin_request_policy"
-  comment = "Forward all request headers except host"
-  cookies_config {
-    cookie_behavior = "all"
-  }
-  headers_config {
-    header_behavior = "whitelist"
-    headers {
-      items = [
-        "x-tfc-task-signature",
-        "content-type",
-        "user-agent",
-      "x-amzn-trace-id"]
+resource "aws_cloudwatch_log_group" "runtask_waf" {
+  count             = local.waf_deployment
+  provider          = aws.cloudfront_waf
+  name              = "aws-waf-logs-${var.name_prefix}-runtask_waf_acl"
+  retention_in_days = var.cloudwatch_log_group_retention
+  #checkov:skip=CKV_AWS_158:no sensitive data in cloudwatch log
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "runtask_waf" {
+  count                   = local.waf_deployment
+  provider                = aws.cloudfront_waf
+  log_destination_configs = [aws_cloudwatch_log_group.runtask_waf[count.index].arn]
+  resource_arn            = aws_wafv2_web_acl.runtask_waf[count.index].arn
+  redacted_fields {
+    single_header {
+      name = "x-tfc-task-signature"
     }
-  }
-  query_strings_config {
-    query_string_behavior = "all"
   }
 }
