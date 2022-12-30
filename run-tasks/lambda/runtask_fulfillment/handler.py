@@ -65,7 +65,7 @@ else: # disable logging if environment variable is not set
     LOG_GROUP_NAME = False
 
 def lambda_handler(event, context):
-    logger.info(json.dumps(event))
+    logger.debug(json.dumps(event))
     try:
         if not iamConfigMap: load_config("default.yaml") # load the config file
 

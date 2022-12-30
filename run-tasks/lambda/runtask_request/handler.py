@@ -42,7 +42,7 @@ else:
     logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    logger.info(json.dumps(event))
+    logger.debug(json.dumps(event))
     try:
         VERIFY = True
         if event["payload"]["detail-type"] == "hashicorp-tfc-runtask":

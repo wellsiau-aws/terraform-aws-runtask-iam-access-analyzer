@@ -35,7 +35,7 @@ else:
     TFC_HOST_NAME = "app.terraform.io"
 
 def lambda_handler(event, context):
-    logger.info(json.dumps(event))
+    logger.debug(json.dumps(event))
     try:
         # trim empty url from the payload
         if event["payload"]["result"]["fulfillment"]["url"] == False:
@@ -76,7 +76,7 @@ def lambda_handler(event, context):
         access_token = event["payload"]["detail"]["access_token"]
         headers = __build_standard_headers(access_token)
         response = __patch(endpoint, headers, bytes(json.dumps(payload), encoding="utf-8"))
-        logger.info("TFC response: {}".format(response))
+        logger.debug("TFC response: {}".format(response))
         return "completed"
   
     except Exception as e:

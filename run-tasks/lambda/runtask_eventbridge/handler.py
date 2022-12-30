@@ -71,7 +71,7 @@ class PutEventError(Exception):
 
 def lambda_handler(event, _context):
     """RunTask function"""
-    logger.info(json.dumps(event))
+    logger.debug(json.dumps(event))
     
     headers = event.get('headers')
     # Input validation
