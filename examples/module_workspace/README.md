@@ -34,12 +34,11 @@ First step is to deploy the module into dedicated Terraform Cloud workspace. The
   terraform init
   ```
 
-* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in Terraform Cloud, i.e. using variable sets. [Follow these instructions to learn more](https://developer.hashicorp.com/terraform/tutorials/cloud-get-started/cloud-create-variable-set).
-
-* In order to create and configure the run tasks, you also need to have Terraform Cloud token stored as Variable/Variable Sets/Environment Variables in the workspace. Add `TFE_HOSTNAME` and `TFE_TOKEN` environment variable to the same variable set or directly on the workspace.
-![TFC Configure Variable Set](../diagram/TerraformCloud-VariableSets.png?raw=true "Configure Terraform Cloud Variable Set")
-
 * Configure the new workspace (i.e `aws-ia2-infra`) in Terraform Cloud to use `local` execution mode. Skip this if you publish the module into Terraform registry.
+
+* Configure the AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) by using environment variables.
+
+* In order to create and configure the run tasks, you also need to have Terraform Cloud token stored as Environment Variables. Add `TFE_HOSTNAME` and `TFE_TOKEN` environment variable.
 
 * Run Terraform apply 
   ```bash
