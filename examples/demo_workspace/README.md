@@ -9,7 +9,7 @@ Follow the steps below to attach the run task created from the module into a new
 * Use the provided demo workspace configuration.
 
   ```bash
-  cd ../examples/demo_workspace
+  cd examples/demo_workspace
   ```
 
 * Change the org name in the file [`provider.tf`](provider.tf#L5) with your own Terraform Cloud org name.

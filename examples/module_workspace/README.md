@@ -10,7 +10,7 @@ First step is to deploy the module into dedicated Terraform Cloud workspace. The
 * Use the provided module example to deploy the solution.
 
   ```bash
-  cd ../examples/module_workspace
+  cd examples/module_workspace
   ```
 
 * Change the org name in the file [`provider.tf`](provider.tf#L5) to your TFC org.
